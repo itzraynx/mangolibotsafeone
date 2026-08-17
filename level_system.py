@@ -1,7 +1,7 @@
 """
 ═══════════════════════════════════════════════════════════════════════════════
 LEVEL SYSTEM
-XP, levels, ranks, invite tracking & leaderboards for the Novagen bot.
+XP, levels, ranks, invite tracking & leaderboards for the MangoliBot bot.
 by Nokiatis Community
 ═══════════════════════════════════════════════════════════════════════════════
 

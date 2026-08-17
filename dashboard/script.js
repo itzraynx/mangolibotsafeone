@@ -90,7 +90,7 @@ async function loadStatus() {
     document.getElementById('conn-dot').className = 'conn-dot ' + (connected ? 'on' : 'off');
     document.getElementById('conn-text').textContent = connected ? 'Bot online' : (s.reason || 'Bot offline');
 
-    document.getElementById('hero-name').textContent = s.bot_name || 'Novagen';
+    document.getElementById('hero-name').textContent = s.bot_name || 'MangoliBot';
     document.getElementById('hero-badge').textContent = connected ? 'Online' : 'Offline';
     document.getElementById('hero-badge').className = 'badge ' + (connected ? 'on' : 'off');
 

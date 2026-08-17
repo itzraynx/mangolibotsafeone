@@ -389,11 +389,11 @@ def _presence_summary():
 
 def get_status():
     if bot is None:
-        return {"connected": False, "bot_name": "Novagen", "reason": "Bot not started"}
+        return {"connected": False, "bot_name": "MangoliBot", "reason": "Bot not started"}
 
     try:
         if not bot.is_ready():
-            return {"connected": False, "bot_name": bot.user.name if bot.user else "Novagen",
+            return {"connected": False, "bot_name": bot.user.name if bot.user else "MangoliBot",
                     "reason": "Connecting…"}
     except Exception:
         pass
@@ -408,7 +408,7 @@ def get_status():
 
     return {
         "connected": True,
-        "bot_name": bot.user.name if bot.user else "Novagen",
+        "bot_name": bot.user.name if bot.user else "MangoliBot",
         "bot_id": str(bot.user.id) if bot.user else None,
         "avatar_url": str(bot.user.avatar.url) if bot.user and bot.user.avatar else None,
         "latency_ms": round(bot.latency * 1000) if bot.latency else 0,

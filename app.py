@@ -7,6 +7,6 @@
 from bot import bot, TOKEN, logger
 
 if __name__ == "__main__":
-    logger.info("Starting Novagen Bot via app.py...")
+    logger.info("Starting MangoliBot via app.py...")
     logger.info("=" * 60)
     bot.run(TOKEN)
