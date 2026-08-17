@@ -649,16 +649,30 @@ async def on_member_join(member: discord.Member):
 @bot.tree.command(name="rank", description="🏆 View your (or someone's) level & rank card")
 @app_commands.describe(member="User to check (defaults to you)")
 async def rank_command(interaction: discord.Interaction, member: Optional[discord.Member] = None):
+    """Display premium rank card with enhanced styling."""
     member = member or interaction.user
     stats = level_system.get_user_stats(interaction.guild_id, member.id)
     if stats is None:
-        await interaction.response.send_message(
-            "❌ This user has no XP yet — start chatting, join voice, or invite people!", ephemeral=True
+        embed = discord.Embed(
+            title="❌ **No Rank Data Found**",
+            description=f"**{member.display_name}** hasn't earned any XP yet!\n\n> 💡 Start chatting, join voice channels, or invite friends to earn XP!",
+            color=0x2D5F3B,
+            timestamp=datetime.now(timezone.utc)
         )
+        embed.set_footer(text="✦ MangoliBot • Level System", icon_url=EmbedFactory.BOT_ICON)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
         return
+    
     rank = level_system.get_rank(interaction.guild_id, member.id)
     balance = economy_system.get_balance(interaction.guild_id, member.id)
     embed = build_rank_embed(member, stats, rank=rank, balance=balance)
+    
+    # Enhance the embed with premium styling
+    embed.set_footer(
+        text=f"✦ {member.display_name}'s Progress • MangoliBot v2.0",
+        icon_url=member.avatar.url if member.avatar else EmbedFactory.BOT_ICON
+    )
+    
     await interaction.response.send_message(embed=embed)
 
 
@@ -1042,27 +1056,56 @@ async def send_log(title: str, message: str, log_type: str = "info", no_cooldown
 
 @bot.tree.command(name="stats", description="View bot statistics")
 async def stats_command(interaction: discord.Interaction):
-    """Display bot statistics."""
+    """Display bot statistics with premium embed."""
     
     uptime = datetime.now(timezone.utc) - bot.start_time
     hours, remainder = divmod(int(uptime.total_seconds()), 3600)
     minutes, seconds = divmod(remainder, 60)
     
     embed = discord.Embed(
-        title=f"{Emojis.STAR} Bot Statistics",
-        description="MangoliBot Performance",
+        title="✨ **MANGOLIBOT STATISTICS** ✨",
+        description="**━━━━━━━━━━━━━━━━━━━━━━**\n\n*Real-time performance metrics & system status*",
         color=EmbedColors.INFO,
         timestamp=datetime.now(timezone.utc)
     )
     
-    embed.add_field(name="⏱️ Uptime", value=f"```{hours}h {minutes}m {seconds}s```", inline=True)
-    embed.add_field(name="🗄️ Servers", value=f"```{len(bot.guilds)}```", inline=True)
-    embed.add_field(name="📶 Latency", value=f"```{round(bot.latency * 1000)}ms```", inline=True)
-    embed.add_field(name="🧵 Thread Pool", value=f"```{MAX_WORKERS} workers```", inline=True)
-    embed.add_field(name="⌘ Commands", value=f"```{len(bot.tree.get_commands())}```", inline=True)
+    embed.add_field(
+        name="⏱️ **UPTIME**", 
+        value=f"> **{hours}h {minutes}m {seconds}s**\n*Continuous operation*", 
+        inline=True
+    )
+    embed.add_field(
+        name="🗄️ **SERVERS**", 
+        value=f"> **{len(bot.guilds):,}**\n*Active communities*", 
+        inline=True
+    )
+    embed.add_field(
+        name="📶 **LATENCY**", 
+        value=f"> **{round(bot.latency * 1000)}ms**\n*Response time*", 
+        inline=True
+    )
+    embed.add_field(
+        name="🧵 **THREAD POOL**", 
+        value=f"> **{MAX_WORKERS} workers**\n*Parallel processing*", 
+        inline=True
+    )
+    embed.add_field(
+        name="⌘ **COMMANDS**", 
+        value=f"> **{len(bot.tree.get_commands())}**\n*Available tools*", 
+        inline=True
+    )
+    embed.add_field(
+        name="🚀 **STATUS**", 
+        value="> **🟢 ONLINE**\n*Fully operational*", 
+        inline=True
+    )
     
-    embed.set_footer(text=EmbedFactory.FOOTER_TEXT, icon_url=EmbedFactory.BOT_ICON)
     embed.set_thumbnail(url=bot.user.avatar.url if bot.user.avatar else None)
+    embed.set_image(url="https://cdn.discordapp.com/embed/avatars/0.png")
+    embed.set_footer(
+        text="✦ MangoliBot v2.0 • Powered by NOKIATIS COMMUNITY",
+        icon_url=EmbedFactory.BOT_ICON
+    )
     
     await interaction.response.send_message(embed=embed)
 
@@ -1177,7 +1220,7 @@ HELP_CATEGORIES = {
 
 
 class HelpCategorySelect(discord.ui.Select):
-    """Dropdown select for help categories."""
+    """Premium dropdown select for help categories with enhanced styling."""
     
     def __init__(self):
         options = [
@@ -1190,14 +1233,14 @@ class HelpCategorySelect(discord.ui.Select):
             for key, cat in HELP_CATEGORIES.items()
         ]
         super().__init__(
-            placeholder="📂 Select a category...",
+            placeholder="🔍 Browse commands by category...",
             options=options,
             min_values=1,
             max_values=1
         )
     
     async def callback(self, interaction: discord.Interaction):
-        """Handle category selection."""
+        """Handle category selection with premium embed."""
         category_key = self.values[0]
         category = HELP_CATEGORIES[category_key]
         
@@ -1205,19 +1248,24 @@ class HelpCategorySelect(discord.ui.Select):
         color = category.get('color', EmbedFactory.PRIMARY)
         icon = category.get('icon', '')
         
-        embed = EmbedFactory.custom(
-            title=f"{category['name']}",
-            description=category['description'],
+        embed = discord.Embed(
+            title=f"{category['emoji']} {category['name']}",
+            description=f"**{category['description']}**\n\n" + "─" * 30,
             color=color,
-            emoji=category['emoji']
+            timestamp=datetime.now(timezone.utc)
         )
         
-        # Add commands as fields with better formatting
-        for cmd, desc in category["commands"]:
-            embed.add_field(name=f"{icon} {cmd}", value=desc, inline=False)
+        # Add commands with enhanced formatting
+        for i, (cmd, desc) in enumerate(category["commands"], 1):
+            embed.add_field(
+                name=f"`{i:02d}` ▸ {icon} **{cmd}**",
+                value=f"> {desc}",
+                inline=False
+            )
         
+        embed.set_thumbnail(url=EmbedFactory.BOT_ICON)
         embed.set_footer(
-            text=f"{EmbedFactory.FOOTER_TEXT} • {len(category['commands'])} commands",
+            text=f"✦ MangoliBot • {len(category['commands'])} Commands in this Category",
             icon_url=EmbedFactory.BOT_ICON,
         )
         await interaction.response.edit_message(embed=embed)
@@ -1246,62 +1294,100 @@ class HelpView(discord.ui.View):
             item.disabled = True
     
     def create_home_embed(self) -> discord.Embed:
-        """Create the main help menu embed with modern design."""
+        """Create the main help menu embed with premium modern design."""
         total_commands = sum(len(c["commands"]) for c in HELP_CATEGORIES.values())
         
-        # Create a beautiful gradient-style embed
+        # Create a stunning gradient-style embed with rich formatting
         embed = discord.Embed(
-            title="✨ MANGOLIBOT HELP CENTER",
+            title="✨ **MANGOLIBOT COMMAND CENTER** ✨",
             description=(
-                "**Welcome to MangoliBot!** 🚀\n\n"
-                "Your all-in-one Discord bot for account checking, AI chat, leveling, economy, and more!\n"
-                "Select a category from the dropdown below to explore commands."
+                "**━━━━━━━━━━━━━━━━━━━━━━**\n"
+                f"**Welcome, {discord.utils.escape_markdown('Commander')}!** 🚀\n\n"
+                "Your ultimate Discord companion for:\n"
+                "> 🔐 **Account Checking** • Minecraft, Steam, Netflix & more\n"
+                "> 🤖 **AI Conversations** • Powered by MiMo & Groq\n"
+                "> 📈 **Level System** • Voice & message XP with rewards\n"
+                "> 💰 **Economy** • Coins, gambling, shop & boosters\n\n"
+                "**━━━━━━━━━━━━━━━━━━━━━━**\n\n"
+                "🔽 **Select a category below** to explore commands!\n"
+                "Use the buttons to navigate or close this menu."
             ),
             color=EmbedFactory.PRIMARY,
             timestamp=datetime.now(timezone.utc)
         )
-        embed.set_footer(text=EmbedFactory.FOOTER_TEXT, icon_url=EmbedFactory.BOT_ICON)
         
-        # Build category list with emojis and formatting
-        categories_text = ""
-        for cat in HELP_CATEGORIES.values():
+        # Build enhanced category showcase
+        categories_showcase = ""
+        for i, (key, cat) in enumerate(HELP_CATEGORIES.items(), 1):
             icon = cat.get('icon', '▫️')
-            categories_text += f"{cat['emoji']} **{cat['name']}**\n{icon} {cat['description']}\n\n"
+            cmd_count = len(cat['commands'])
+            categories_showcase += (
+                f"`{i:02d}` {cat['emoji']} **{cat['name']}** — *{cmd_count} commands*\n"
+                f"> {icon} {cat['description']}\n\n"
+            )
         
-        embed.add_field(name="📂 Available Categories", value=categories_text[:1024], inline=False)
-        
-        # Add stats with better visual appeal
         embed.add_field(
-            name="⚡ Quick Stats",
-            value=f"> Commands: `{total_commands}`\n> Categories: `{len(HELP_CATEGORIES)}`\n> Status: `Online`",
+            name="📂 **COMMAND CATEGORIES**", 
+            value=categories_showcase[:1024], 
+            inline=False
+        )
+        
+        # Enhanced stats with visual appeal
+        embed.add_field(
+            name="⚡ **BOT STATUS**",
+            value=(
+                f"> Commands: `{total_commands:,}`\n"
+                f"> Categories: `{len(HELP_CATEGORIES)}`\n"
+                f"> Status: `🟢 Online`"
+            ),
             inline=True,
         )
         embed.add_field(
-            name="🏆 Get Started",
-            value="> Chat & voice for XP\n> `/daily` for bonuses\n> Invite friends for rewards",
+            name="🏆 **QUICK TIPS**",
+            value=(
+                "> Talk & voice for **XP**\n"
+                "> `/daily` for **bonuses**\n"
+                "> Invite friends for **rewards**"
+            ),
             inline=True,
         )
         embed.add_field(
-            name="🔗 Useful Links",
-            value="> [Dashboard](http://localhost:5000)\n> [Support Server](https://discord.gg/nokiatis)\n> [Invite Bot](https://discord.com/oauth2/authorize)",
+            name="🔗 **ESSENTIAL LINKS**",
+            value=(
+                "> [🌐 Dashboard](http://localhost:5000)\n"
+                "> [💬 Support Server](https://discord.gg/nokiatis)\n"
+                "> [➕ Invite Bot](https://discord.com/oauth2/authorize)"
+            ),
             inline=True,
         )
         
-        # Add a nice thumbnail or image if available
-        # embed.set_thumbnail(url=EmbedFactory.BOT_ICON)
+        # Add thumbnail and image for premium look
+        embed.set_thumbnail(url=EmbedFactory.BOT_ICON)
+        embed.set_image(url="https://cdn.discordapp.com/embed/avatars/0.png")  # Optional banner
+        
+        embed.set_footer(
+            text=f"✦ MangoliBot v2.0 • Made with ❤️ by NOKIATIS COMMUNITY",
+            icon_url=EmbedFactory.BOT_ICON,
+        )
         
         return embed
     
-    @discord.ui.button(label="Home", style=discord.ButtonStyle.primary, emoji="🏠", row=1)
+    @discord.ui.button(label="Home", style=discord.ButtonStyle.blurple, emoji="🏠", row=1)
     async def home_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        """Return to home menu."""
+        """Return to home menu with premium embed."""
         embed = self.create_home_embed()
-        await interaction.response.edit_message(embed=embed)
+        await interaction.response.edit_message(embed=embed, view=self)
     
-    @discord.ui.button(label="Close", style=discord.ButtonStyle.danger, emoji="❌", row=1)
+    @discord.ui.button(label="Close Menu", style=discord.ButtonStyle.danger, emoji="🔒", row=1)
     async def close_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        """Close the help menu."""
-        embed = EmbedFactory.info("Help Closed", "Use `/help` to open again.")
+        """Close the help menu with elegant dismiss."""
+        embed = discord.Embed(
+            title="👋 Help Menu Closed",
+            description="**Thank you for using MangoliBot!**\n\nUse `/help` anytime to reopen this menu.",
+            color=0x2D5F3B,
+            timestamp=datetime.now(timezone.utc)
+        )
+        embed.set_footer(text="✦ MangoliBot • At your service", icon_url=EmbedFactory.BOT_ICON)
         for item in self.children:
             item.disabled = True
         await interaction.response.edit_message(embed=embed, view=self)
