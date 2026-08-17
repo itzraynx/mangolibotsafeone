@@ -1,7 +1,7 @@
 """
 ═══════════════════════════════════════════════════════════════════════════════
 ECONOMY SYSTEM
-Coins, gambling, shop & XP boosters for the Novagen bot.
+Coins, gambling, shop & XP boosters for the MangoliBot bot.
 by Nokiatis Community
 ═══════════════════════════════════════════════════════════════════════════════
 

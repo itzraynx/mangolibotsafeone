@@ -59,7 +59,7 @@ logging.basicConfig(
     format='%(asctime)s | %(levelname)-8s | %(message)s',
     datefmt='%H:%M:%S'
 )
-logger = logging.getLogger('Novagen')
+logger = logging.getLogger('MangoliBot')
 
 # Forward log records to the dashboard control bridge (for the Logs page).
 class _BridgeLogHandler(logging.Handler):
@@ -122,8 +122,8 @@ class EmbedFactory:
     GAMEPASS = 0x107C10   # Xbox Green - GamePass
     
     # Branding
-    BOT_NAME = "Novagen"
-    FOOTER_TEXT = "⚡ Novagen • by Nokiatis Community"
+    BOT_NAME = "MangoliBot"
+    FOOTER_TEXT = "⚡ MangoliBot • by Nokiatis Community"
     BOT_ICON = "https://i.imgur.com/7ZGzqjY.png"
     
     @staticmethod
@@ -235,7 +235,7 @@ class Emojis:
 # BOT SETUP
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class NovagenBot(commands.Bot):
+class MangoliBot(commands.Bot):
     """Custom bot class with enhanced functionality."""
     
     def __init__(self):
@@ -395,7 +395,7 @@ class NovagenBot(commands.Bot):
                 await message.reply("❌ An error occurred while processing your request.")
 
 # Initialize bot
-bot = NovagenBot()
+bot = MangoliBot()
 
 
 @bot.event
@@ -1032,7 +1032,7 @@ async def send_log(title: str, message: str, log_type: str = "info", no_cooldown
             color=color,
             timestamp=datetime.now(timezone.utc)
         )
-        embed.set_footer(text="⚡ Novagen Logs", icon_url="https://i.imgur.com/7ZGzqjY.png")
+        embed.set_footer(text="⚡ MangoliBot Logs", icon_url="https://i.imgur.com/7ZGzqjY.png")
         
         await channel.send(embed=embed)
         
@@ -1050,7 +1050,7 @@ async def stats_command(interaction: discord.Interaction):
     
     embed = discord.Embed(
         title=f"{Emojis.STAR} Bot Statistics",
-        description="Novagen Bot Performance",
+        description="MangoliBot Performance",
         color=EmbedColors.INFO,
         timestamp=datetime.now(timezone.utc)
     )
@@ -1073,10 +1073,39 @@ async def stats_command(interaction: discord.Interaction):
 
 # Command definitions for each category
 HELP_CATEGORIES = {
+    "checkers": {
+        "emoji": "🔍",
+        "name": "Account Checkers",
+        "description": "Ultra-fast account validation with 50 parallel workers",
+        "color": 0x3498DB,
+        "icon": "⚡",
+        "commands": [
+            ("`/check <type> <file>`", "Check accounts from file (minecraft/netflix/etc)"),
+            ("`/steam <combo>`", "Check Steam account instantly"),
+            ("`/netflix <combo>`", "Verify Netflix subscription"),
+            ("`/disney <combo>`", "Check Disney+ status"),
+            ("`/crunchyroll <combo>`", "Validate Crunchyroll premium"),
+            ("`/spotify <combo>`", "Check Spotify premium"),
+        ]
+    },
+    "ai": {
+        "emoji": "🤖",
+        "name": "AI & Chat",
+        "description": "Advanced AI powered by MiMo & Groq",
+        "color": 0x9B59B6,
+        "icon": "✨",
+        "commands": [
+            ("`/ai <prompt>`", "Chat with advanced AI"),
+            ("`/personality`", "Change AI personality type"),
+            ("`/queue`", "View current AI request queue"),
+        ]
+    },
     "leveling": {
-        "emoji": "🏆",
-        "name": "Leveling & Ranks",
-        "description": "Earn XP by chatting, voice & inviting",
+        "emoji": "📊",
+        "name": "Level System",
+        "description": "Earn XP, climb ranks & compete",
+        "color": 0xFBBF24,
+        "icon": "🏆",
         "commands": [
             ("`/rank [@user]`", "Your level, XP, progress & achievements card"),
             ("`/leaderboard`", "Top 10 members by level"),
@@ -1090,6 +1119,8 @@ HELP_CATEGORIES = {
         "emoji": "💰",
         "name": "Economy & Gambling",
         "description": "Coins, betting & the shop",
+        "color": 0x57F287,
+        "icon": "💎",
         "commands": [
             ("`/balance [@user]`", "Your coin balance & active boosts"),
             ("`/give <@user> <amount>`", "Send coins to a friend"),
@@ -1103,9 +1134,11 @@ HELP_CATEGORIES = {
     "games": {
         "emoji": "🎮",
         "name": "Mini-Games",
-        "description": "Quick fun games",
+        "description": "Quick fun games to play",
+        "color": 0xED4245,
+        "icon": "🎲",
         "commands": [
-            ("`/rps <choice>`", "Rock paper scissors vs the bot"),
+            ("`/rps <choice>`", "Rock paper scissors vs bot"),
             ("`/guess <1-100>`", "Guess the secret number"),
             ("`/8ball <question>`", "Ask the magic 8-ball"),
         ]
@@ -1113,27 +1146,31 @@ HELP_CATEGORIES = {
     "voice": {
         "emoji": "🔊",
         "name": "Voice Channel",
-        "description": "Moroccan meme sounds in voice",
+        "description": "Moroccan meme sounds 24/7",
+        "color": 0x5865F2,
+        "icon": "🎵",
         "commands": [
-            ("`/voicejoin <channel>`", "Join & play random sounds 24/7"),
+            ("`/voicejoin <channel>`", "Join & play random sounds"),
             ("`/voicestop`", "Pause sound playback"),
             ("`/voiceplay`", "Resume sound playback"),
             ("`/voiceleave`", "Disconnect from voice"),
             ("`/voicestatus`", "Check voice status"),
-            ("`/playsoundlink <url>`", "Play a MyInstants link"),
+            ("`/playsoundlink <url>`", "Play MyInstants link"),
         ]
     },
     "general": {
         "emoji": "⚙️",
         "name": "General",
-        "description": "Bot info and utilities",
+        "description": "Bot info & utilities",
+        "color": 0x34495E,
+        "icon": "🔧",
         "commands": [
             ("`/help`", "This interactive help menu"),
             ("`/stats`", "Bot statistics & uptime"),
             ("`/serverstats`", "Server dashboard"),
             ("`/profile [@user]`", "User profile card"),
-            ("`/personality`", "Change the AI's personality"),
-            ("`/poll <question> <options>`", "Create an interactive poll"),
+            ("`/personality`", "Change AI personality"),
+            ("`/poll <question> <options>`", "Create interactive poll"),
         ]
     }
 }
@@ -1164,15 +1201,20 @@ class HelpCategorySelect(discord.ui.Select):
         category_key = self.values[0]
         category = HELP_CATEGORIES[category_key]
         
+        # Use category-specific color if available, otherwise default to PRIMARY
+        color = category.get('color', EmbedFactory.PRIMARY)
+        icon = category.get('icon', '')
+        
         embed = EmbedFactory.custom(
             title=f"{category['name']}",
             description=category['description'],
-            color=EmbedFactory.PRIMARY,
+            color=color,
             emoji=category['emoji']
         )
         
+        # Add commands as fields with better formatting
         for cmd, desc in category["commands"]:
-            embed.add_field(name=cmd, value=desc, inline=False)
+            embed.add_field(name=f"{icon} {cmd}", value=desc, inline=False)
         
         embed.set_footer(
             text=f"{EmbedFactory.FOOTER_TEXT} • {len(category['commands'])} commands",
@@ -1204,34 +1246,49 @@ class HelpView(discord.ui.View):
             item.disabled = True
     
     def create_home_embed(self) -> discord.Embed:
-        """Create the main help menu embed."""
+        """Create the main help menu embed with modern design."""
         total_commands = sum(len(c["commands"]) for c in HELP_CATEGORIES.values())
-        embed = EmbedFactory.custom(
-            title="HELP CENTER",
+        
+        # Create a beautiful gradient-style embed
+        embed = discord.Embed(
+            title="✨ MANGOLIBOT HELP CENTER",
             description=(
-                "Welcome to **Novagen**! 🚀\n"
-                "Select a category from the dropdown below to explore all commands."
+                "**Welcome to MangoliBot!** 🚀\n\n"
+                "Your all-in-one Discord bot for account checking, AI chat, leveling, economy, and more!\n"
+                "Select a category from the dropdown below to explore commands."
             ),
             color=EmbedFactory.PRIMARY,
-            emoji="📚"
+            timestamp=datetime.now(timezone.utc)
         )
+        embed.set_footer(text=EmbedFactory.FOOTER_TEXT, icon_url=EmbedFactory.BOT_ICON)
         
-        categories_text = "\n".join([
-            f"{cat['emoji']} **{cat['name']}** — {cat['description']}"
-            for cat in HELP_CATEGORIES.values()
-        ])
-        embed.add_field(name="📂 Categories", value=categories_text, inline=False)
+        # Build category list with emojis and formatting
+        categories_text = ""
+        for cat in HELP_CATEGORIES.values():
+            icon = cat.get('icon', '▫️')
+            categories_text += f"{cat['emoji']} **{cat['name']}**\n{icon} {cat['description']}\n\n"
         
+        embed.add_field(name="📂 Available Categories", value=categories_text[:1024], inline=False)
+        
+        # Add stats with better visual appeal
         embed.add_field(
             name="⚡ Quick Stats",
-            value=f"• Commands: `{total_commands}`\n• Categories: `{len(HELP_CATEGORIES)}`",
+            value=f"> Commands: `{total_commands}`\n> Categories: `{len(HELP_CATEGORIES)}`\n> Status: `Online`",
             inline=True,
         )
         embed.add_field(
             name="🏆 Get Started",
-            value="• Chat & join voice to earn XP\n• `/daily` for a bonus\n• Invite friends for rewards",
+            value="> Chat & voice for XP\n> `/daily` for bonuses\n> Invite friends for rewards",
             inline=True,
         )
+        embed.add_field(
+            name="🔗 Useful Links",
+            value="> [Dashboard](http://localhost:5000)\n> [Support Server](https://discord.gg/nokiatis)\n> [Invite Bot](https://discord.com/oauth2/authorize)",
+            inline=True,
+        )
+        
+        # Add a nice thumbnail or image if available
+        # embed.set_thumbnail(url=EmbedFactory.BOT_ICON)
         
         return embed
     
@@ -1724,10 +1781,9 @@ async def on_app_command_error(interaction: discord.Interaction, error: app_comm
         
     else:
         logger.error(f"Command error: {error}")
-        embed = discord.Embed(
-            title=f"{Emojis.ERROR} Error",
-            description=f"An error occurred:\n```{str(error)[:200]}```",
-            color=EmbedColors.ERROR
+        embed = EmbedFactory.error(
+            title="Error",
+            description=f"An error occurred:\n```{str(error)[:200]}```"
         )
         try:
             if interaction.response.is_done():
@@ -1847,16 +1903,15 @@ async def voicejoin_command(interaction: discord.Interaction, channel: discord.V
 
     # Check voice prerequisites before attempting to connect
     if shutil.which("ffmpeg") is None:
-        embed = discord.Embed(
-            title="⚠️ Voice Not Available",
+        embed = EmbedFactory.warning(
+            title="Voice Not Available",
             description=(
                 "`ffmpeg` is not installed on this host, so the bot cannot play audio.\n\n"
                 "**How to fix:**\n"
                 "• Linux: `sudo apt install ffmpeg`\n"
                 "• Windows: download from ffmpeg.org and add it to PATH\n\n"
                 "Note: discord.py 2.7+ also requires the `davey` package for voice."
-            ),
-            color=0xE67E22
+            )
         )
         await interaction.followup.send(embed=embed, ephemeral=True)
         return
@@ -1878,10 +1933,9 @@ async def voicejoin_command(interaction: discord.Interaction, channel: discord.V
         try:
             voice_client = await asyncio.wait_for(channel.connect(), timeout=15.0)
         except asyncio.TimeoutError:
-            embed = discord.Embed(
-                title="❌ Connection Timeout",
-                description="Could not connect to voice server in time.\n\n**Possible causes:**\n• Network/DNS issues\n• Discord voice servers unavailable\n• Firewall blocking voice",
-                color=0xE74C3C
+            embed = EmbedFactory.error(
+                title="Connection Timeout",
+                description="Could not connect to voice server in time.\n\n**Possible causes:**\n• Network/DNS issues\n• Discord voice servers unavailable\n• Firewall blocking voice"
             )
             await interaction.followup.send(embed=embed, ephemeral=True)
             return
@@ -1897,12 +1951,11 @@ async def voicejoin_command(interaction: discord.Interaction, channel: discord.V
         # List available games
         games_list = ", ".join([f"🎮 {g.title()}" for g in GAME_SOUNDS.keys()])
         
-        embed = discord.Embed(
-            title="🔊 Joined Voice Channel!",
+        embed = EmbedFactory.success(
+            title="Joined Voice Channel!",
             description=f"```yaml\nChannel: {channel.name}\nMode: 24/7 Game Sounds\nStatus: Playing\n```",
-            color=0x00FF00,
-            timestamp=datetime.now(timezone.utc)
         )
+        embed.timestamp = datetime.now(timezone.utc)
         embed.add_field(
             name="🎮 Game Sounds",
             value=games_list,
@@ -1913,16 +1966,15 @@ async def voicejoin_command(interaction: discord.Interaction, channel: discord.V
             value="```\n/voicestop  - Pause sounds\n/voiceplay  - Resume sounds\n/voiceleave - Disconnect\n/voicestatus - Check status\n```",
             inline=False
         )
-        embed.set_footer(text="⚡ Novagen Voice • 24/7 Game Lobby")
+        embed.set_footer(text="⚡ MangoliBot Voice • 24/7 Game Lobby")
         
         await interaction.followup.send(embed=embed)
         logger.info(f"Joined voice: {channel.name} in {interaction.guild.name}")
         
     except discord.errors.ClientException:
-        embed = discord.Embed(
-            title="❌ Already Connected",
-            description="Use `/voiceleave` first, then try again.",
-            color=0xE74C3C
+        embed = EmbedFactory.error(
+            title="Already Connected",
+            description="Use `/voiceleave` first, then try again."
         )
         await interaction.followup.send(embed=embed, ephemeral=True)
         
@@ -1930,16 +1982,14 @@ async def voicejoin_command(interaction: discord.Interaction, channel: discord.V
         error_msg = str(e)[:150]
         # Check for common network errors
         if "getaddrinfo failed" in str(e) or "DNS" in str(e):
-            embed = discord.Embed(
-                title="❌ DNS/Network Error",
-                description="Could not resolve Discord voice server.\n\n**Try these fixes:**\n• Check your internet connection\n• Restart your router\n• Use Google DNS (8.8.8.8)\n• Disable VPN if using one",
-                color=0xE74C3C
+            embed = EmbedFactory.error(
+                title="DNS/Network Error",
+                description="Could not resolve Discord voice server.\n\n**Try these fixes:**\n• Check your internet connection\n• Restart your router\n• Use Google DNS (8.8.8.8)\n• Disable VPN if using one"
             )
         else:
-            embed = discord.Embed(
-                title="❌ Failed to Join",
-                description=f"```{error_msg}```\n\n**Requirements:**\n• `pip install PyNaCl`\n• FFmpeg installed",
-                color=0xE74C3C
+            embed = EmbedFactory.error(
+                title="Failed to Join",
+                description=f"```{error_msg}```\n\n**Requirements:**\n• `pip install PyNaCl`\n• FFmpeg installed"
             )
         await interaction.followup.send(embed=embed, ephemeral=True)
 
@@ -1950,10 +2000,9 @@ async def voicestop_command(interaction: discord.Interaction):
     guild_id = interaction.guild_id
     
     if guild_id not in voice_clients or not voice_clients[guild_id]:
-        embed = discord.Embed(
-            title="❌ Not Connected",
-            description="Use `/voicejoin` first.",
-            color=0xE74C3C
+        embed = EmbedFactory.error(
+            title="Not Connected",
+            description="Use `/voicejoin` first."
         )
         await interaction.response.send_message(embed=embed, ephemeral=True)
         return
@@ -1970,7 +2019,7 @@ async def voicestop_command(interaction: discord.Interaction):
         color=0xFFA500,
         timestamp=datetime.now(timezone.utc)
     )
-    embed.set_footer(text="⚡ Novagen Voice")
+    embed.set_footer(text="⚡ MangoliBot Voice")
     await interaction.response.send_message(embed=embed)
 
 
@@ -1996,7 +2045,7 @@ async def voiceplay_command(interaction: discord.Interaction):
         color=0x00FF00,
         timestamp=datetime.now(timezone.utc)
     )
-    embed.set_footer(text="⚡ Novagen Voice")
+    embed.set_footer(text="⚡ MangoliBot Voice")
     await interaction.response.send_message(embed=embed)
 
 
@@ -2033,7 +2082,7 @@ async def voiceleave_command(interaction: discord.Interaction):
             color=0xFFA500,
             timestamp=datetime.now(timezone.utc)
         )
-        embed.set_footer(text="⚡ Novagen Voice")
+        embed.set_footer(text="⚡ MangoliBot Voice")
         await interaction.response.send_message(embed=embed)
         
     except Exception as e:
@@ -2081,7 +2130,7 @@ async def voicestatus_command(interaction: discord.Interaction):
             timestamp=datetime.now(timezone.utc)
         )
     
-    embed.set_footer(text="⚡ Novagen Voice")
+    embed.set_footer(text="⚡ MangoliBot Voice")
     await interaction.response.send_message(embed=embed)
 
 
@@ -2152,7 +2201,7 @@ async def playsoundlink_command(interaction: discord.Interaction, link: str):
             value=f"[MyInstants]({link})",
             inline=False
         )
-        embed.set_footer(text="⚡ Novagen Voice")
+        embed.set_footer(text="⚡ MangoliBot Voice")
         await interaction.response.send_message(embed=embed)
         logger.info(f"Playing custom sound: {sound_name}")
         
@@ -2171,7 +2220,7 @@ async def playsoundlink_command(interaction: discord.Interaction, link: str):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
-    logger.info("Starting Novagen Bot...")
+    logger.info("Starting MangoliBot...")
     logger.info("=" * 60)
 
     # ── Graceful startup checks ──────────────────────────────────────────────
