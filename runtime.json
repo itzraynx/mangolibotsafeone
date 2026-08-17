@@ -1,0 +1,11 @@
+{
+  "name": "novagen-checker-bot",
+  "version": "1.0.0",
+  "description": "Novagen Minecraft Account Checker Discord Bot",
+  "main": "bot.py",
+  "scripts": {
+    "start": "python bot.py"
+  },
+  "author": "Nokiatis Team",
+  "python": "3.10"
+}

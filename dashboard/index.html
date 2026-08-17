@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Novagen Bot Dashboard</title>
+    <meta name="description" content="Novagen Bot control panel by Nokiatis Community">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app">
+        <!-- ── Sidebar ─────────────────────────────────────────────── -->
+        <aside class="sidebar" id="sidebar">
+            <div class="brand">
+                <div class="brand-logo">◆</div>
+                <div class="brand-text">
+                    <span class="brand-name">Novagen</span>
+                    <span class="brand-sub">Ultimate Control Panel</span>
+                </div>
+            </div>
+
+            <nav class="nav">
+                <div class="nav-section">Monitor</div>
+                <button class="nav-item active" data-page="overview"><span class="nav-ico">▤</span>Overview</button>
+                <button class="nav-item" data-page="logs"><span class="nav-ico">≡</span>Logs</button>
+                <button class="nav-item" data-page="servers"><span class="nav-ico">◈</span>Servers</button>
+                <button class="nav-item" data-page="commands"><span class="nav-ico">⌘</span>Commands</button>
+                <button class="nav-item" data-page="levels"><span class="nav-ico">🏆</span>Levels</button>
+
+                <div class="nav-section">Control</div>
+                <button class="nav-item" data-page="voice"><span class="nav-ico">♪</span>Voice</button>
+                <button class="nav-item" data-page="presence"><span class="nav-ico">◉</span>Presence</button>
+                <button class="nav-item" data-page="ai"><span class="nav-ico">✦</span>AI Brain</button>
+                <button class="nav-item" data-page="broadcast"><span class="nav-ico">✉</span>Broadcast</button>
+
+                <div class="nav-section">System</div>
+                <button class="nav-item" data-page="system"><span class="nav-ico">⚙</span>System</button>
+            </nav>
+
+            <div class="sidebar-foot">
+                <div class="conn" id="conn">
+                    <span class="conn-dot" id="conn-dot"></span>
+                    <span id="conn-text">Connecting…</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ── Main ───────────────────────────────────────────────── -->
+        <main class="main">
+            <header class="topbar">
+                <button class="menu-btn" id="menu-btn">☰</button>
+                <div class="page-head">
+                    <h1 id="page-title">Overview</h1>
+                    <span id="page-subtitle">Bot status at a glance</span>
+                </div>
+                <div class="topbar-actions">
+                    <button class="btn ghost" id="refresh-btn">↻ Refresh</button>
+                </div>
+            </header>
+
+            <div class="content">
+                <!-- ── OVERVIEW ─────────────────────────────────────── -->
+                <section class="page active" id="page-overview">
+                    <div class="hero" id="hero">
+                        <div class="hero-avatar" id="hero-avatar">◆</div>
+                        <div class="hero-info">
+                            <div class="hero-name">
+                                <span id="hero-name">Novagen</span>
+                                <span class="badge" id="hero-badge">Offline</span>
+                            </div>
+                            <div class="hero-meta">
+                                <span id="hero-latency">Latency: —</span><span class="dot-sep">•</span>
+                                <span id="hero-guilds">0 servers</span><span class="dot-sep">•</span>
+                                <span id="hero-uptime">Uptime: —</span>
+                            </div>
+                            <div class="hero-meta presence-line" id="hero-presence"></div>
+                        </div>
+                    </div>
+
+                    <div class="cards">
+                        <div class="card"><div class="card-label">Servers</div><div class="card-value" id="stat-servers">0</div></div>
+                        <div class="card"><div class="card-label">Uptime</div><div class="card-value" id="stat-uptime">—</div></div>
+                        <div class="card"><div class="card-label">Latency</div><div class="card-value" id="stat-latency">—</div></div>
+                        <div class="card"><div class="card-label">Commands Run</div><div class="card-value" id="stat-commands">0</div></div>
+                        <div class="card"><div class="card-label">Voice Connections</div><div class="card-value" id="stat-voice">0</div></div>
+                        <div class="card"><div class="card-label">Disabled Cmds</div><div class="card-value" id="stat-disabled">0</div></div>
+                        <div class="card"><div class="card-label">AI Personality</div><div class="card-value small" id="stat-personality">—</div></div>
+                        <div class="card"><div class="card-label">AI Auto-Reply</div><div class="card-value small" id="stat-ai">—</div></div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-head"><h2>Quick Actions</h2></div>
+                        <div class="quick">
+                            <button class="btn accent" data-nav="voice">♪ Voice Control</button>
+                            <button class="btn accent" data-nav="presence">◉ Set Presence</button>
+                            <button class="btn" data-nav="broadcast">✉ Broadcast</button>
+                            <button class="btn" data-nav="ai">✦ AI Brain</button>
+                            <button class="btn" data-nav="logs">≡ View Logs</button>
+                            <button class="btn" data-nav="commands">⌘ Commands</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ── VOICE ────────────────────────────────────────── -->
+                <section class="page" id="page-voice">
+                    <div class="panel">
+                        <div class="panel-head"><h2>Active Connections</h2></div>
+                        <div class="voice-list" id="voice-list">
+                            <div class="empty">No active voice connections.</div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-head"><h2>Join a Voice Channel</h2></div>
+                        <div class="form-row">
+                            <div class="field"><label>Server</label><select id="join-guild"><option value="">Select server…</option></select></div>
+                            <div class="field"><label>Voice Channel</label><select id="join-channel"><option value="">Select channel…</option></select></div>
+                            <button class="btn accent" id="join-btn">Connect</button>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-head"><h2>Sound Library</h2></div>
+                        <div class="sound-lib" id="sound-lib"><div class="empty">Loading sounds…</div></div>
+                    </div>
+                </section>
+
+                <!-- ── PRESENCE ─────────────────────────────────────── -->
+                <section class="page" id="page-presence">
+                    <div class="panel">
+                        <div class="panel-head"><h2>Bot Presence</h2></div>
+                        <div class="form">
+                            <div class="field block">
+                                <label>Status</label>
+                                <select id="pres-status">
+                                    <option value="online">🟢 Online</option>
+                                    <option value="idle">🌙 Idle</option>
+                                    <option value="dnd">🔴 Do Not Disturb</option>
+                                    <option value="invisible">⚫ Invisible</option>
+                                </select>
+                            </div>
+                            <div class="field block">
+                                <label>Activity Type</label>
+                                <select id="pres-type">
+                                    <option value="streaming">🔴 Streaming</option>
+                                    <option value="playing">Playing</option>
+                                    <option value="listening">Listening to</option>
+                                    <option value="watching">Watching</option>
+                                    <option value="competing">Competing in</option>
+                                </select>
+                            </div>
+                            <div class="field block">
+                                <label>Activity Text</label>
+                                <input type="text" id="pres-text" placeholder="e.g. Nokiatis Community 🎮">
+                            </div>
+                            <div class="field block" id="pres-url-wrap">
+                                <label>Stream URL (for Streaming)</label>
+                                <input type="text" id="pres-url" placeholder="https://twitch.tv/nokiatis">
+                            </div>
+                            <button class="btn accent" id="pres-apply">Apply Presence</button>
+                            <span class="save-status" id="pres-status-msg"></span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ── AI ───────────────────────────────────────────── -->
+                <section class="page" id="page-ai">
+                    <div class="panel">
+                        <div class="panel-head"><h2>AI Brain</h2></div>
+                        <div class="form">
+                            <div class="field block toggle-row">
+                                <label>AI Auto-Reply</label>
+                                <label class="switch">
+                                    <input type="checkbox" id="ai-enabled">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="field block">
+                                <label>Personality</label>
+                                <select id="ai-personality"></select>
+                            </div>
+                            <div class="field block">
+                                <label>AI Channel ID</label>
+                                <input type="text" id="ai-channel" placeholder="e.g. 1464054036603863072">
+                                <small>The text channel where the bot auto-replies.</small>
+                            </div>
+                            <div class="field block">
+                                <label>Custom Persona (advanced)</label>
+                                <textarea id="ai-persona" rows="4" placeholder="Leave empty to use the selected personality. Or write a full custom system prompt…"></textarea>
+                                <small>Overrides the personality traits when set.</small>
+                            </div>
+                            <button class="btn accent" id="ai-save">Save AI Settings</button>
+                            <span class="save-status" id="ai-status"></span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ── BROADCAST ────────────────────────────────────── -->
+                <section class="page" id="page-broadcast">
+                    <div class="panel">
+                        <div class="panel-head"><h2>Send Message</h2></div>
+                        <div class="form">
+                            <div class="form-row">
+                                <div class="field"><label>Server</label><select id="bc-guild"><option value="">Select server…</option></select></div>
+                                <div class="field"><label>Text Channel</label><select id="bc-channel"><option value="">Select channel…</option></select></div>
+                            </div>
+                            <div class="field block">
+                                <label>Message</label>
+                                <textarea id="bc-text" rows="4" placeholder="Message to send as the bot…"></textarea>
+                            </div>
+                            <button class="btn accent" id="bc-send">Send Message</button>
+                            <span class="save-status" id="bc-status"></span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ── COMMANDS ─────────────────────────────────────── -->
+                <section class="page" id="page-commands">
+                    <div class="panel">
+                        <div class="panel-head">
+                            <h2>Slash Commands</h2>
+                            <button class="btn small" id="cmd-reset">Reset Stats</button>
+                        </div>
+                        <div class="cmd-list" id="cmd-list"><div class="empty">Loading commands…</div></div>
+                    </div>
+                </section>
+
+                <!-- ── LOGS ─────────────────────────────────────────── -->
+                <section class="page" id="page-logs">
+                    <div class="panel">
+                        <div class="panel-head logs-toolbar">
+                            <h2>Live Logs</h2>
+                            <div class="toolbar">
+                                <select id="log-level">
+                                    <option value="ALL">All levels</option>
+                                    <option value="INFO">Info</option>
+                                    <option value="WARNING">Warning</option>
+                                    <option value="ERROR">Error</option>
+                                </select>
+                                <label class="toggle-label"><input type="checkbox" id="log-auto" checked> Auto-refresh</label>
+                                <a class="btn small" href="/api/logs/export" target="_blank">⬇ Export</a>
+                                <button class="btn small danger" id="log-clear">Clear</button>
+                            </div>
+                        </div>
+                        <div class="log-list" id="log-list"><div class="empty">No logs yet.</div></div>
+                    </div>
+                </section>
+
+                <!-- ── LEVELS ───────────────────────────────────────── -->
+                <section class="page" id="page-levels">
+                    <div class="panel">
+                        <div class="panel-head">
+                            <h2>🏆 Leaderboard</h2>
+                            <select id="levels-guild" class="toolbar-select"></select>
+                        </div>
+                        <div class="level-stats" id="level-stats">
+                            <div class="card"><div class="card-label">Tracked Members</div><div class="card-value" id="lv-tracked">0</div></div>
+                            <div class="card"><div class="card-label">Total XP</div><div class="card-value" id="lv-total-xp">0</div></div>
+                            <div class="card"><div class="card-label">Total Coins</div><div class="card-value" id="lv-total-coins">0</div></div>
+                            <div class="card"><div class="card-label">Total Invites</div><div class="card-value" id="lv-total-invites">0</div></div>
+                            <div class="card"><div class="card-label">Top Member</div><div class="card-value small" id="lv-top">—</div></div>
+                        </div>
+                        <div class="leaderboard" id="leaderboard">
+                            <div class="empty">Loading leaderboard…</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ── SERVERS ──────────────────────────────────────── -->
+                <section class="page" id="page-servers">
+                    <div class="grid" id="servers-grid"><div class="empty">Loading servers…</div></div>
+                </section>
+
+                <!-- ── SYSTEM ───────────────────────────────────────── -->
+                <section class="page" id="page-system">
+                    <div class="panel">
+                        <div class="panel-head"><h2>System Info</h2></div>
+                        <div class="sys-info" id="sys-info"><div class="empty">Loading…</div></div>
+                    </div>
+                    <div class="panel danger">
+                        <div class="panel-head"><h2>Danger Zone</h2></div>
+                        <div class="danger-actions">
+                            <button class="btn" id="sys-clear-logs">Clear Logs</button>
+                            <button class="btn" id="sys-reset-stats">Reset Command Stats</button>
+                            <button class="btn danger" id="sys-restart">↻ Restart Bot</button>
+                            <button class="btn danger" id="sys-shutdown">⏻ Shutdown Bot</button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <div class="toasts" id="toasts"></div>
+    <script src="script.js"></script>
+</body>
+</html>
