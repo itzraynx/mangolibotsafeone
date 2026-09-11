@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MangoliBot Dashboard</title>
-    <meta name="description" content="MangoliBot control panel by Nokiatis Community">
+    <title>Mangoli Bot Dashboard</title>
+    <meta name="description" content="Mangoli Bot control panel by Nokiatis Community">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -14,7 +14,7 @@
             <div class="brand">
                 <div class="brand-logo">◆</div>
                 <div class="brand-text">
-                    <span class="brand-name">MangoliBot</span>
+                    <span class="brand-name">Mangoli</span>
                     <span class="brand-sub">Ultimate Control Panel</span>
                 </div>
             </div>
@@ -26,12 +26,22 @@
                 <button class="nav-item" data-page="servers"><span class="nav-ico">◈</span>Servers</button>
                 <button class="nav-item" data-page="commands"><span class="nav-ico">⌘</span>Commands</button>
                 <button class="nav-item" data-page="levels"><span class="nav-ico">🏆</span>Levels</button>
+                <button class="nav-item" data-page="economy"><span class="nav-ico">💰</span>Economy</button>
+                <button class="nav-item" data-page="music"><span class="nav-ico">🎵</span>Music</button>
+                <button class="nav-item" data-page="moderation"><span class="nav-ico">🛡️</span>Moderation</button>
+                <button class="nav-item" data-page="giveaways"><span class="nav-ico">🎉</span>Giveaways</button>
+                <button class="nav-item" data-page="announcements"><span class="nav-ico">📢</span>Announcements</button>
+                <button class="nav-item" data-page="stats"><span class="nav-ico">📈</span>Stats</button>
+                <button class="nav-item" data-page="autorespond"><span class="nav-ico">💬</span>Auto-Responder</button>
+                <button class="nav-item" data-page="backup"><span class="nav-ico">💾</span>Backup</button>
+                <button class="nav-item" data-page="webhooks"><span class="nav-ico">🔗</span>Webhooks</button>
 
                 <div class="nav-section">Control</div>
                 <button class="nav-item" data-page="voice"><span class="nav-ico">♪</span>Voice</button>
                 <button class="nav-item" data-page="presence"><span class="nav-ico">◉</span>Presence</button>
                 <button class="nav-item" data-page="ai"><span class="nav-ico">✦</span>AI Brain</button>
                 <button class="nav-item" data-page="broadcast"><span class="nav-ico">✉</span>Broadcast</button>
+                <button class="nav-item" data-page="tickets"><span class="nav-ico">🎫</span>Tickets</button>
 
                 <div class="nav-section">System</div>
                 <button class="nav-item" data-page="system"><span class="nav-ico">⚙</span>System</button>
@@ -65,7 +75,7 @@
                         <div class="hero-avatar" id="hero-avatar">◆</div>
                         <div class="hero-info">
                             <div class="hero-name">
-                                <span id="hero-name">MangoliBot</span>
+                                <span id="hero-name">Mangoli</span>
                                 <span class="badge" id="hero-badge">Offline</span>
                             </div>
                             <div class="hero-meta">
@@ -116,6 +126,32 @@
                             <div class="field"><label>Server</label><select id="join-guild"><option value="">Select server…</option></select></div>
                             <div class="field"><label>Voice Channel</label><select id="join-channel"><option value="">Select channel…</option></select></div>
                             <button class="btn accent" id="join-btn">Connect</button>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-head"><h2>🗣️ Text to Speech</h2></div>
+                        <div class="form">
+                            <div class="field block">
+                                <label>Write a sentence — the bot will speak it in voice</label>
+                                <textarea id="tts-text" rows="3" maxlength="190" placeholder="e.g. Welcome to the Nokiatis Community!"></textarea>
+                                <small id="tts-count">0 / 190</small>
+                            </div>
+                            <div class="form-row">
+                                <div class="field"><label>Server</label><select id="tts-guild"><option value="">Select server…</option></select></div>
+                                <div class="field"><label>Language</label>
+                                    <select id="tts-lang">
+                                        <option value="en">English</option>
+                                        <option value="ar">Arabic</option>
+                                        <option value="fr">French</option>
+                                        <option value="es">Spanish</option>
+                                        <option value="de">German</option>
+                                        <option value="it">Italian</option>
+                                        <option value="tr">Turkish</option>
+                                    </select>
+                                </div>
+                                <button class="btn accent" id="tts-speak">🔊 Speak</button>
+                            </div>
                         </div>
                     </div>
 
@@ -262,6 +298,299 @@
                         </div>
                         <div class="leaderboard" id="leaderboard">
                             <div class="empty">Loading leaderboard…</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ── ECONOMY ───────────────────────────────────────── -->
+                <section class="page" id="page-economy">
+                    <div class="panel">
+                        <div class="panel-head">
+                            <h2>💰 Coin Balances</h2>
+                            <select id="economy-guild" class="toolbar-select"></select>
+                        </div>
+                        <div class="eco-list" id="eco-list">
+                            <div class="empty">Loading balances…</div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-head"><h2>🛒 Shop Items</h2></div>
+                        <div class="eco-shop" id="eco-shop">
+                            <div class="empty">Loading shop…</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ── MUSIC ────────────────────────────────────────── -->
+                <section class="page" id="page-music">
+                    <div class="panel">
+                        <div class="panel-head"><h2>🎵 Now Playing</h2></div>
+                        <div class="music-list" id="music-list">
+                            <div class="empty">No music playing. Use /play in Discord to start a track.</div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-head"><h2>▶️ Play a Song</h2></div>
+                        <div class="form-row">
+                            <div class="field"><label>Server</label><select id="music-guild"><option value="">Select server…</option></select></div>
+                            <div class="field"><label>Song (name or URL)</label><input type="text" id="music-query" placeholder="e.g. despacito"></div>
+                            <button class="btn accent" id="music-play">▶️ Play</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ── MODERATION ───────────────────────────────────── -->
+                <section class="page" id="page-moderation">
+                    <div class="panel">
+                        <div class="panel-head">
+                            <h2>🛡️ Members</h2>
+                            <select id="mod-guild" class="toolbar-select"></select>
+                        </div>
+                        <input type="text" id="mod-search" placeholder="🔍 Search members…" style="margin-bottom:12px">
+                        <div class="mod-list" id="mod-list">
+                            <div class="empty">Loading members…</div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-head"><h2>🎭 Manage Roles</h2></div>
+                        <div class="form-row">
+                            <div class="field"><label>Member</label><select id="role-user"></select></div>
+                            <div class="field"><label>Role</label><select id="role-select"></select></div>
+                            <button class="btn accent" id="role-add">➕ Add Role</button>
+                            <button class="btn" id="role-remove">➖ Remove Role</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ── GIVEAWAYS ────────────────────────────────────── -->
+                <section class="page" id="page-giveaways">
+                    <div class="panel">
+                        <div class="panel-head"><h2>🎉 Create Giveaway</h2></div>
+                        <div class="form">
+                            <div class="field block"><label>Prize</label><input type="text" id="gw-prize" placeholder="e.g. 5000 coins"></div>
+                            <div class="form-row">
+                                <div class="field"><label>Winners</label><input type="number" id="gw-winners" value="1" min="1" max="10"></div>
+                                <div class="field"><label>Duration (minutes)</label><input type="number" id="gw-duration" value="60" min="1"></div>
+                                <button class="btn accent" id="gw-create">🎉 Create</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-head"><h2>📋 Active Giveaways</h2></div>
+                        <div class="gw-list" id="gw-list">
+                            <div class="empty">No giveaways yet.</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ── ANNOUNCEMENTS ────────────────────────────────── -->
+                <section class="page" id="page-announcements">
+                    <div class="panel">
+                        <div class="panel-head"><h2>📢 Schedule Announcement</h2></div>
+                        <div class="form">
+                            <div class="form-row">
+                                <div class="field"><label>Server</label><select id="ann-guild"><option value="">Select server…</option></select></div>
+                                <div class="field"><label>Channel</label><select id="ann-channel"><option value="">Select channel…</option></select></div>
+                            </div>
+                            <div class="field block"><label>Message</label><textarea id="ann-message" rows="3" placeholder="Announcement text…"></textarea></div>
+                            <div class="form-row">
+                                <div class="field"><label>Send In (minutes)</label><input type="number" id="ann-delay" value="30" min="1"></div>
+                                <button class="btn accent" id="ann-create">📢 Schedule</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-head"><h2>📋 Scheduled</h2></div>
+                        <div class="ann-list" id="ann-list">
+                            <div class="empty">No scheduled announcements.</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ── STATS ────────────────────────────────────────── -->
+                <section class="page" id="page-stats">
+                    <div class="panel">
+                        <div class="panel-head">
+                            <h2>📈 Server Activity</h2>
+                            <select id="stats-guild" class="toolbar-select"></select>
+                        </div>
+                        <div class="level-stats" id="stats-totals"></div>
+                        <div class="stats-chart" id="stats-chart">
+                            <div class="empty">Loading activity…</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ── AUTO-RESPONDER ───────────────────────────────── -->
+                <section class="page" id="page-autorespond">
+                    <div class="panel">
+                        <div class="panel-head"><h2>💬 Add Auto-Responder</h2></div>
+                        <div class="form">
+                            <div class="form-row">
+                                <div class="field"><label>Server</label><select id="ar-guild"><option value="">Select server…</option></select></div>
+                                <div class="field"><label>Trigger (keyword)</label><input type="text" id="ar-trigger" placeholder="e.g. invite"></div>
+                            </div>
+                            <div class="field block"><label>Response</label><textarea id="ar-response" rows="2" placeholder="What the bot replies…"></textarea></div>
+                            <button class="btn accent" id="ar-add">➕ Add</button>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-head"><h2>📋 Active Responders</h2></div>
+                        <div class="ar-list" id="ar-list">
+                            <div class="empty">No auto-responders yet.</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ── BACKUP ───────────────────────────────────────── -->
+                <section class="page" id="page-backup">
+                    <div class="panel">
+                        <div class="panel-head"><h2>💾 Backup & Restore</h2></div>
+                        <div class="backup-actions">
+                            <a class="btn accent" href="/api/backup/download" target="_blank">⬇️ Download Backup</a>
+                        </div>
+                        <div class="backup-files" id="backup-files">
+                            <div class="empty">Loading files…</div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-head"><h2>📤 Restore</h2></div>
+                        <div class="form">
+                            <div class="field block"><label>Paste backup JSON</label><textarea id="backup-json" rows="6" placeholder='{"levels_data.json": {...}, ...}'></textarea></div>
+                            <button class="btn accent" id="backup-restore">📤 Restore</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ── WEBHOOKS ─────────────────────────────────────── -->
+                <section class="page" id="page-webhooks">
+                    <div class="panel">
+                        <div class="panel-head">
+                            <h2>🔗 Webhooks</h2>
+                            <select id="wh-guild" class="toolbar-select"></select>
+                        </div>
+                        <div class="wh-list" id="wh-list">
+                            <div class="empty">Loading webhooks…</div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-head"><h2>➕ Create Webhook</h2></div>
+                        <div class="form-row">
+                            <div class="field"><label>Channel</label><select id="wh-channel"></select></div>
+                            <div class="field"><label>Name</label><input type="text" id="wh-name" placeholder="Mangoli Webhook"></div>
+                            <button class="btn accent" id="wh-create">➕ Create</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ── TICKETS ───────────────────────────────────────── -->
+                <section class="page" id="page-tickets">
+                    <div class="ticket-tabs">
+                        <button class="btn ticket-tab active" data-tab="manage">📋 Tickets</button>
+                        <button class="btn ticket-tab" data-tab="setup">⚙️ Setup Panel</button>
+                        <button class="btn ticket-tab" data-tab="preview">👁️ Preview</button>
+                    </div>
+
+                    <!-- Manage tickets -->
+                    <div class="ticket-pane" id="tickets-manage">
+                        <div class="panel">
+                            <div class="panel-head">
+                                <h2>🎫 Tickets</h2>
+                                <select id="tickets-guild" class="toolbar-select"></select>
+                            </div>
+                            <div class="ticket-stats" id="ticket-stats"></div>
+                            <div class="ticket-list" id="ticket-list">
+                                <div class="empty">Loading tickets…</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Setup panel -->
+                    <div class="ticket-pane" id="tickets-setup" style="display:none;">
+                        <div class="panel">
+                            <div class="panel-head"><h2>📋 Panel Message</h2></div>
+                            <div class="form">
+                                <div class="field block"><label>Panel Title</label><input type="text" id="tk-title" placeholder="Open a Ticket"></div>
+                                <div class="field block"><label>Panel Description</label><textarea id="tk-desc" rows="2" placeholder="Select a category below to create a ticket"></textarea></div>
+                                <div class="field block"><label>Panel Name</label><input type="text" id="tk-name" placeholder="Mangoli Tickets"></div>
+                                <div class="form-row">
+                                    <div class="field"><label>Display Mode</label>
+                                        <select id="tk-display"><option value="select">Dropdown Menu</option><option value="buttons">Buttons</option></select>
+                                    </div>
+                                    <div class="field"><label>Placeholder</label><input type="text" id="tk-placeholder" placeholder="🎫 Choose a category…"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="panel">
+                            <div class="panel-head"><h2>👥 Staff & Logs</h2></div>
+                            <div class="form">
+                                <div class="field block"><label>Staff Roles (see & manage all tickets)</label><select id="tk-staff-roles" multiple size="4"></select></div>
+                                <div class="form-row">
+                                    <div class="field"><label>Ticket Logs Channel</label><select id="tk-log-create"></select></div>
+                                    <div class="field"><label>Close/Transcript Channel</label><select id="tk-log-close"></select></div>
+                                    <div class="field"><label>Rating Log Channel</label><select id="tk-log-rating"></select></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="panel">
+                            <div class="panel-head">
+                                <h2>📂 Categories</h2>
+                                <button class="btn small accent" id="tk-add-cat">➕ Add Category</button>
+                            </div>
+                            <div class="tk-categories" id="tk-categories"></div>
+                        </div>
+
+                        <div class="panel">
+                            <div class="panel-head"><h2>📤 Deploy Panel</h2></div>
+                            <div class="form">
+                                <div class="form-row">
+                                    <div class="field"><label>1️⃣ Server</label><select id="tk-server"><option value="">— choose a server —</option></select></div>
+                                    <div class="field"><label>2️⃣ Channel</label><select id="tk-send-channel"><option value="">— choose a channel —</option></select></div>
+                                    <button class="btn accent" id="tk-send">🚀 Send Panel</button>
+                                </div>
+                                <small style="color:var(--muted)">Pick the server first, then the channel where the panel will be posted.</small>
+                            </div>
+                        </div>
+
+                        <button class="btn accent btn-block" id="tk-save">💾 Save All Settings</button>
+                        <span class="save-status" id="tk-save-status"></span>
+                    </div>
+
+                    <!-- Preview -->
+                    <div class="ticket-pane" id="tickets-preview" style="display:none;">
+                        <div class="panel">
+                            <div class="panel-head"><h2>👁️ Live Preview — try it!</h2></div>
+                            <div class="preview-wrap">
+                                <!-- Discord-style panel embed -->
+                                <div class="discord-embed" id="pv-embed">
+                                    <div class="de-author">
+                                        <span class="de-avatar">◆</span>
+                                        <span class="de-author-name" id="pv-author">Mangoli Bot</span>
+                                    </div>
+                                    <div class="de-title" id="pv-title">Open a Ticket</div>
+                                    <div class="de-desc" id="pv-desc"></div>
+                                    <div class="de-cats" id="pv-cats"></div>
+                                    <div class="de-footer">⚡ Mangoli Bot • by Nokiatis Community</div>
+                                </div>
+
+                                <!-- Interactive controls (buttons OR dropdown) -->
+                                <div class="preview-controls" id="pv-controls"></div>
+
+                                <!-- Simulated ticket result -->
+                                <div class="preview-result" id="pv-result">
+                                    <div class="empty">Click a button above to see how the ticket looks 👆</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </section>
