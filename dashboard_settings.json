@@ -1,0 +1,10 @@
+{
+  "ai_enabled": true,
+  "ai_personality": "default",
+  "ai_channel_id": "",
+  "ai_custom_persona": "",
+  "presence_status": "online",
+  "presence_activity_type": "playing",
+  "presence_text": "",
+  "presence_stream_url": "https://twitch.tv/nokiatis"
+}

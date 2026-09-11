@@ -1,11 +1,11 @@
 {
-  "name": "novagen-checker-bot",
-  "version": "1.0.0",
-  "description": "MangoliBot Minecraft Account Checker Discord Bot",
-  "main": "bot.py",
+  "name": "mangoli-bot",
+  "version": "2.0.0",
+  "description": "Mangoli Bot — all-in-one Discord bot (leveling, economy, tickets, moderation, music)",
+  "main": "run.py",
   "scripts": {
-    "start": "python bot.py"
+    "start": "python run.py"
   },
-  "author": "Nokiatis Team",
-  "python": "3.10"
+  "author": "Nokiatis Community",
+  "python": "3.11"
 }

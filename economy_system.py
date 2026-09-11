@@ -1,7 +1,7 @@
 """
 ═══════════════════════════════════════════════════════════════════════════════
 ECONOMY SYSTEM
-Coins, gambling, shop & XP boosters for the MangoliBot bot.
+Coins, gambling, shop & XP boosters for the Mangoli bot.
 by Nokiatis Community
 ═══════════════════════════════════════════════════════════════════════════════
 

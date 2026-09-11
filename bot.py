@@ -14,7 +14,7 @@
 ║            ██████╔╝╚██████╔╝   ██║                                                  ║
 ║            ╚═════╝  ╚═════╝    ╚═╝                                                  ║
 ║                                                                                     ║
-║   ⚡ NOKIATIS COMMUNITY - NOVAGEN CLOUD SERVICES ⚡                                      ║
+║   ⚡ NOKIATIS COMMUNITY - MANGOLI CLOUD SERVICES ⚡                                      ║
 ║   🤖 Multi-Feature Discord Bot 🤖                                       ║
 ║                                                                                     ║
 ╚════════════════════════════════════════════════════════════════════════════════════╝
@@ -50,6 +50,15 @@ import level_system
 # Economy system (coins, gambling, shop, boosters)
 import economy_system
 
+# Ticket system (support tickets, panels, transcripts)
+import tickets
+
+# Moderation utilities (purge user/channel messages)
+import moderation
+
+# Music system (Lavalink / wavelink)
+import music
+
 # MiMoAI for AI-powered responses
 from mimo_ai import MiMoAI
 
@@ -59,7 +68,7 @@ logging.basicConfig(
     format='%(asctime)s | %(levelname)-8s | %(message)s',
     datefmt='%H:%M:%S'
 )
-logger = logging.getLogger('MangoliBot')
+logger = logging.getLogger('Mangoli')
 
 # Forward log records to the dashboard control bridge (for the Logs page).
 class _BridgeLogHandler(logging.Handler):
@@ -122,8 +131,8 @@ class EmbedFactory:
     GAMEPASS = 0x107C10   # Xbox Green - GamePass
     
     # Branding
-    BOT_NAME = "MangoliBot"
-    FOOTER_TEXT = "⚡ MangoliBot • by Nokiatis Community"
+    BOT_NAME = "Mangoli"
+    FOOTER_TEXT = "⚡ Mangoli • by Nokiatis Community"
     BOT_ICON = "https://i.imgur.com/7ZGzqjY.png"
     
     @staticmethod
@@ -208,28 +217,35 @@ class EmbedColors:
 LOGS_CHANNEL = 1463665248606359562
 
 # Emojis for visual appeal
+# Custom emojis (mg_* uploaded to the guild) — with unicode fallbacks
+try:
+    from emojis import em as _em
+except ImportError:
+    _em = lambda n: ""
+
+
 class Emojis:
-    LOADING = "⏳"
-    SUCCESS = "✅"
-    ERROR = "❌"
-    WARNING = "⚠️"
+    LOADING = _em("loading") or "⏳"
+    SUCCESS = _em("success") or "✅"
+    ERROR = _em("error") or "❌"
+    WARNING = _em("warning") or "⚠️"
     MINECRAFT = "⛏️"
     CAPE = "🧥"
-    STAR = "⭐"
+    STAR = _em("star") or "⭐"
     BAN = "🔨"
     UNBAN = "🟢"
-    LEVEL = "📊"
-    RANK = "👑"
-    INFO = "ℹ️"
+    LEVEL = _em("stats") or "📊"
+    RANK = _em("crown") or "👑"
+    INFO = _em("info") or "ℹ️"
     GAMEPASS = "🎮"
-    ULTIMATE = "💎"
+    ULTIMATE = _em("gem") or "💎"
     MAIL = "📧"
     HYPIXEL = "🔶"
-    COIN = "💰"
-    TROPHY = "🏆"
-    FIRE = "🔥"
-    INVITE = "📨"
-    DAILY = "🎁"
+    COIN = _em("coin") or "💰"
+    TROPHY = _em("trophy") or "🏆"
+    FIRE = _em("fire") or "🔥"
+    INVITE = _em("invite") or "📨"
+    DAILY = _em("gift") or "🎁"
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # BOT SETUP
@@ -241,7 +257,8 @@ class MangoliBot(commands.Bot):
     def __init__(self):
         intents = discord.Intents.default()
         intents.message_content = True
-        
+        intents.members = True   # needed so guild.members is fully populated (economy/moderation/stats pages)
+
         super().__init__(
             command_prefix="!",
             intents=intents,
@@ -254,10 +271,25 @@ class MangoliBot(commands.Bot):
     async def setup_hook(self):
         """Setup hook called when bot is ready to sync commands."""
         try:
+            await tickets.start_tasks(self)
+        except Exception as e:
+            logger.warning(f"Ticket tasks failed to start: {e}")
+        try:
+            await music.start(self)
+        except Exception as e:
+            logger.warning(f"Music failed to start: {e}")
+        try:
             synced = await self.tree.sync()
             logger.info(f"Synced {len(synced)} command(s)")
         except Exception as e:
             logger.error(f"Failed to sync commands: {e}")
+
+        # Scheduled announcements checker (runs every 30s)
+        try:
+            if not hasattr(self, "_announce_task") or self._announce_task is None:
+                self._announce_task = self.loop.create_task(announcement_loop())
+        except Exception as e:
+            logger.warning(f"Announcement loop failed: {e}")
     
     async def on_ready(self):
         """Event triggered when bot is fully ready."""
@@ -267,7 +299,7 @@ class MangoliBot(commands.Bot):
         logger.info(f"Bot ID: {self.user.id}")
         logger.info(f"Servers: {len(self.guilds)}")
         logger.info(f"{'═' * 60}")
-        logger.info("📊 DASHBOARD: http://localhost:5000")
+        logger.info("📊 DASHBOARD: http://localhost:16086")
         logger.info(f"{'═' * 60}")
         
         # Set Rich Presence from dashboard settings
@@ -298,7 +330,7 @@ class MangoliBot(commands.Bot):
             logger.warning(f"Could not apply presence: {e}")
         
         # Send startup log to logs channel
-        await send_log("🟢 **BOT ONLINE**", f"Bot started successfully!\n• Name: `{self.user.name}`\n• Servers: `{len(self.guilds)}`\n• Commands synced\n• Dashboard: `http://localhost:5000`", "success")
+        await send_log("🟢 **BOT ONLINE**", f"Bot started successfully!\n• Name: `{self.user.name}`\n• Servers: `{len(self.guilds)}`\n• Commands synced\n• Dashboard: `http://localhost:16086`", "success")
         
         # Register with the dashboard control bridge
         try:
@@ -317,6 +349,14 @@ class MangoliBot(commands.Bot):
             logger.info("Dashboard control bridge registered")
         except Exception as e:
             logger.warning(f"Dashboard bridge not available: {e}")
+
+        # ── Resolve custom emojis from guilds (lookup by name) ────────
+        try:
+            from emojis import refresh_from_guild
+            for guild in self.guilds:
+                refresh_from_guild(guild)
+        except Exception as e:
+            logger.warning(f"Emoji resolution failed: {e}")
 
         # ── Level system: start voice XP loop + cache invites ─────────
         try:
@@ -352,6 +392,15 @@ class MangoliBot(commands.Bot):
                     await grant_xp(message.guild, message.author, amount, "message")
             except Exception as e:
                 logger.error(f"Message XP error: {e}")
+
+        # ── Auto-responder: reply if a keyword matches ────────────────
+        if message.guild is not None and not message.content.startswith(('!', '/')):
+            try:
+                response = control_bridge.check_autoresponders(message.guild.id, message.content)
+                if response:
+                    await message.channel.send(response)
+            except Exception as e:
+                logger.error(f"Auto-responder error: {e}")
 
         # Check if message is in the AI channel (configurable from dashboard)
         try:
@@ -397,6 +446,24 @@ class MangoliBot(commands.Bot):
 # Initialize bot
 bot = MangoliBot()
 
+# Register the ticket system (commands + persistent views)
+try:
+    tickets.register(bot)
+except Exception as e:
+    logger.error(f"Ticket system failed to load: {e}")
+
+# Register moderation commands
+try:
+    moderation.register(bot)
+except Exception as e:
+    logger.error(f"Moderation module failed to load: {e}")
+
+# Register music commands
+try:
+    music.register(bot)
+except Exception as e:
+    logger.error(f"Music module failed to load: {e}")
+
 
 @bot.event
 async def on_app_command_completion(interaction: discord.Interaction, command: discord.app_commands.Command):
@@ -426,35 +493,64 @@ def _progress_bar(cur, need, width=18):
     return "".join("█" if i < filled else "░" for i in range(width))
 
 
+def _fancy_bar(cur, need, width=14):
+    """Big-bot style segmented progress bar with gradient blocks."""
+    pct = (cur / need) if need else 1.0
+    filled = int(width * pct)
+    filled = max(0, min(width, filled))
+    # gradient: dark → light blocks for a "loading" feel
+    blocks = ["▰" if i < filled else "▱" for i in range(width)]
+    return "".join(blocks)
+
+
+def _thumb(member_or_url):
+    """Return a display avatar URL, or the bot icon as fallback."""
+    try:
+        return member_or_url.display_avatar.url
+    except Exception:
+        return member_or_url or EmbedFactory.BOT_ICON
+
+
 def build_rank_embed(member, stats, rank=None, balance=None):
-    """A premium rank card embed."""
+    """🏆 Big-bot style rank card — author header, big level, fancy progress bar."""
     level = stats["level"]
-    bar = _progress_bar(stats["xp_into_level"], stats["xp_needed"])
+    bar = _fancy_bar(stats["xp_into_level"], stats["xp_needed"])
     emoji = level_system.level_emoji(level)
+    next_level = level + 1
+
     embed = discord.Embed(
-        title=f"{emoji} {member.display_name}",
-        description=f"**Level {level}**  ·  `{stats['xp']:,}` XP total",
+        description=(
+            f"## {emoji} Level {level}\n"
+            f"`{stats['xp']:,}` XP total\n\n"
+            f"{bar} `{stats['progress']}%`\n"
+            f"`{stats['xp_into_level']:,}` / `{stats['xp_needed']:,}` XP to level **{next_level}**"
+        ),
         color=EmbedFactory.PREMIUM,
     )
-    embed.set_thumbnail(url=member.display_avatar.url)
-    embed.add_field(
-        name="📈 Progress to next level",
-        value=f"`{bar}`\n`{stats['xp_into_level']:,}` / `{stats['xp_needed']:,}` XP ({stats['progress']}%)",
-        inline=False,
+    embed.set_author(
+        name=f"{member.display_name}",
+        icon_url=_thumb(member),
+        url=f"https://discord.com/users/{member.id}",
     )
+    embed.set_thumbnail(url=_thumb(member))
+
+    # Stats row (inline trio)
+    embed.add_field(name="💬 Messages", value=f"`{stats['messages']:,}`", inline=True)
+    embed.add_field(name="🎙️ Voice", value=f"`{stats['voice_minutes']:,}m`", inline=True)
+    embed.add_field(name="📨 Invites", value=f"`{stats['invites']}`", inline=True)
+    embed.add_field(name="🔥 Streak", value=f"`{stats.get('streak', 0)} days`", inline=True)
+    embed.add_field(name="📅 Weekly", value=f"`{stats.get('weekly_xp', 0):,}` XP", inline=True)
+
     if rank:
         embed.add_field(name="👑 Rank", value=f"`#{rank}`", inline=True)
     if balance is not None:
         embed.add_field(name="💰 Coins", value=f"`{balance:,}`", inline=True)
-    embed.add_field(name="💬 Messages", value=f"`{stats['messages']}`", inline=True)
-    embed.add_field(name="🎙️ Voice (min)", value=f"`{stats['voice_minutes']}`", inline=True)
-    embed.add_field(name="📨 Invites", value=f"`{stats['invites']}`", inline=True)
-    embed.add_field(name="🔥 Streak", value=f"`{stats.get('streak', 0)} days`", inline=True)
-    embed.add_field(name="📅 Weekly XP", value=f"`{stats.get('weekly_xp', 0):,}`", inline=True)
+
     ach = stats.get("achievements", [])
     if ach:
         badges = " ".join(a["emoji"] for a in ach)
         embed.add_field(name=f"🏅 Achievements ({len(ach)})", value=badges, inline=False)
+
     embed.set_footer(text=EmbedFactory.FOOTER_TEXT, icon_url=EmbedFactory.BOT_ICON)
     return embed
 
@@ -475,29 +571,30 @@ async def apply_role_rewards(guild, member, level):
 
 
 async def announce_level_up(guild, member, stats):
-    """Send a celebratory level-up card to the configured channel."""
+    """Send a celebratory big-bot level-up card to the configured channel."""
     try:
         channel = guild.get_channel(levelup_channel_for(guild.id))
         if not channel:
             return
         lv = stats["level"]
         emoji = level_system.level_emoji(lv)
-        bar = _progress_bar(stats["xp_into_level"], stats["xp_needed"])
+        bar = _fancy_bar(stats["xp_into_level"], stats["xp_needed"])
         rank = level_system.get_rank(guild.id, member.id)
 
         embed = discord.Embed(
-            title=f"{emoji} LEVEL UP!",
-            description=f"**{member.mention}** reached **Level {lv}**!",
+            description=(
+                f"# 🎉 LEVEL UP!\n"
+                f"### {emoji} Level {lv}\n"
+                f"**{member.mention}** just leveled up!\n\n"
+                f"{bar}\n"
+                f"`{stats['xp_into_level']:,}` / `{stats['xp_needed']:,}` XP to level **{lv + 1}**"
+            ),
             color=EmbedFactory.GOLD,
         )
-        embed.set_thumbnail(url=member.display_avatar.url)
+        embed.set_author(name=member.display_name, icon_url=_thumb(member))
+        embed.set_thumbnail(url=_thumb(member))
         embed.add_field(name="✨ Total XP", value=f"`{stats['xp']:,}`", inline=True)
         embed.add_field(name="👑 Rank", value=f"`#{rank or '—'}`", inline=True)
-        embed.add_field(
-            name="📈 Next level",
-            value=f"`{bar}`\n`{stats['xp_into_level']:,}` / `{stats['xp_needed']:,}` XP",
-            inline=False,
-        )
         if stats.get("streak", 0) >= 2:
             embed.add_field(name="🔥 Streak", value=f"`{stats['streak']} days`", inline=True)
         embed.set_footer(text=EmbedFactory.FOOTER_TEXT, icon_url=EmbedFactory.BOT_ICON)
@@ -548,12 +645,18 @@ async def announce_achievement(guild, member, aid):
         stats = level_system.get_user_stats(guild.id, member.id)
         total = len(stats.get("achievements", [])) if stats else 0
         embed = discord.Embed(
-            title=f"{ach['emoji']} Achievement Unlocked!",
-            description=f"**{member.mention}** earned **{ach['name']}**!\n> {ach['desc']}",
+            description=(
+                f"# {ach['emoji']} Achievement Unlocked!\n"
+                f"### {ach['name']}\n"
+                f"**{member.mention}** unlocked a new badge!\n\n"
+                f"> {ach['desc']}"
+            ),
             color=EmbedFactory.GOLD,
         )
+        embed.set_author(name=member.display_name, icon_url=_thumb(member))
+        embed.set_thumbnail(url=_thumb(member))
         embed.set_footer(
-            text=f"{EmbedFactory.FOOTER_TEXT} • {total} achievement{'s' if total != 1 else ''} unlocked",
+            text=f"{EmbedFactory.FOOTER_TEXT} • {total}/{len(level_system.ACHIEVEMENTS)} achievements",
             icon_url=EmbedFactory.BOT_ICON,
         )
         await channel.send(embed=embed)
@@ -571,6 +674,17 @@ async def grant_passive_coins(guild, member, source):
     elif source == "voice":
         amount = cfg.get("voice_coins_per_minute", 2)
         economy_system.add_coins(guild.id, member.id, amount)
+
+
+async def announcement_loop():
+    """Send scheduled announcements when they're due."""
+    await asyncio.sleep(30)
+    while True:
+        try:
+            await control_bridge._check_announcements()
+        except Exception as e:
+            logger.error(f"Announcement loop error: {e}")
+        await asyncio.sleep(30)
 
 
 async def voice_xp_loop():
@@ -609,6 +723,47 @@ async def on_invite_create(invite: discord.Invite):
 
 
 @bot.event
+async def build_welcome_embed(guild, member, inviter):
+    """Build a rich, PixelHorizons-style welcome embed for a new member."""
+    member_number = guild.member_count
+    inviter_count = 0
+    if inviter:
+        inviter_count = level_system.get_inviter_count(guild.id, inviter.id)
+
+    # Server initials (fallback if no icon)
+    initials = "".join(w[0] for w in guild.name.split()[:2]).upper() or "NC"
+
+    embed = discord.Embed(
+        title=f"🎉 Welcome to {guild.name} — {member.display_name}",
+        description=(
+            f"**Welcome {member.mention} to {guild.name}**\n\n"
+            f"We're thrilled to have you here!\n"
+            f"Chat, join voice channels and invite your friends "
+            f"to earn XP and coins. 💬🎙️💰"
+        ),
+        color=0x3498DB,
+    )
+    embed.set_author(name=guild.name, icon_url=guild.icon.url if guild.icon else None)
+    embed.set_thumbnail(url=_thumb(member))
+
+    embed.add_field(name="👤 Arrival Confirmed", value=member.mention, inline=False)
+
+    if inviter:
+        invite_word = "invitation" if inviter_count == 1 else "invitations"
+        embed.add_field(
+            name="🎁 Invited By",
+            value=f"{inviter.mention} — **{inviter_count}** {invite_word}",
+            inline=False,
+        )
+
+    embed.add_field(name="🔢 Member Number", value=f"`#{member_number}`", inline=False)
+    embed.set_footer(
+        text=f"{EmbedFactory.FOOTER_TEXT} • Welcome to the family 💜",
+        icon_url=EmbedFactory.BOT_ICON,
+    )
+    return embed
+
+
 async def on_member_join(member: discord.Member):
     """Welcome the new member, attribute the invite used, grant inviter XP."""
     guild = member.guild
@@ -628,19 +783,7 @@ async def on_member_join(member: discord.Member):
     try:
         channel = guild.get_channel(levelup_channel_for(guild.id))
         if channel:
-            embed = discord.Embed(
-                title="👋 Welcome!",
-                description=(
-                    f"Hey **{member.mention}**, welcome to **{guild.name}**! 🎉\n\n"
-                    f"You're member **#{guild.member_count}**.\n"
-                    f"Start chatting, join voice, or invite friends to earn XP and coins! 💬🎙️"
-                ),
-                color=EmbedFactory.SUCCESS,
-            )
-            embed.set_thumbnail(url=member.display_avatar.url)
-            if inviter:
-                embed.add_field(name="🎁 Invited by", value=f"{inviter.mention}", inline=False)
-            embed.set_footer(text=EmbedFactory.FOOTER_TEXT, icon_url=EmbedFactory.BOT_ICON)
+            embed = await build_welcome_embed(guild, member, inviter)
             await channel.send(embed=embed)
     except Exception as e:
         logger.error(f"Welcome message failed: {e}")
@@ -668,22 +811,26 @@ async def leaderboard_command(interaction: discord.Interaction):
     if not board:
         await interaction.response.send_message("📭 No one has earned XP yet!", ephemeral=True)
         return
-    lines = []
     medals = ["🥇", "🥈", "🥉"]
+    lines = []
     for i, (uid, s) in enumerate(board[:10]):
         try:
             member = interaction.guild.get_member(int(uid))
             name = member.display_name if member else f"User {uid}"
         except Exception:
             name = f"User {uid}"
-        medal = medals[i] if i < 3 else f"`#{i+1}`"
-        lines.append(f"{medal} **{name}** — Level `{s['level']}` · `{s['xp']:,}` XP")
+        medal = medals[i] if i < 3 else f"`#{i+1:>2}`"
+        lines.append(f"{medal} **{name}**  ·  Lv `{s['level']}`  ·  `{s['xp']:,}` XP")
+
     embed = discord.Embed(
-        title="🏅 Server Leaderboard",
-        description="\n".join(lines),
+        description=f"# 🏅 Leaderboard\n### Top members in **{interaction.guild.name}**\n\n" + "\n".join(lines),
         color=EmbedFactory.GOLD,
     )
-    embed.set_footer(text=EmbedFactory.FOOTER_TEXT, icon_url=EmbedFactory.BOT_ICON)
+    embed.set_thumbnail(url=interaction.guild.icon.url if interaction.guild.icon else None)
+    embed.set_footer(
+        text=f"{EmbedFactory.FOOTER_TEXT} • Top {min(10, len(board))} of {len(board)}",
+        icon_url=EmbedFactory.BOT_ICON,
+    )
     await interaction.response.send_message(embed=embed)
 
 
@@ -694,10 +841,11 @@ async def invites_command(interaction: discord.Interaction, member: Optional[dis
     stats = level_system.get_user_stats(interaction.guild_id, member.id)
     count = stats["invites"] if stats else 0
     embed = discord.Embed(
-        title="📨 Invite Count",
-        description=f"**{member.display_name}** has invited **{count}** member(s).",
+        description=f"# 📨 Invites\n### `{count}` member{'s' if count != 1 else ''} invited",
         color=EmbedFactory.CHECKING,
     )
+    embed.set_author(name=member.display_name, icon_url=_thumb(member))
+    embed.set_thumbnail(url=_thumb(member))
     embed.set_footer(text=EmbedFactory.FOOTER_TEXT, icon_url=EmbedFactory.BOT_ICON)
     await interaction.response.send_message(embed=embed)
 
@@ -711,12 +859,15 @@ async def daily_command(interaction: discord.Interaction):
         economy_system.add_coins(interaction.guild_id, interaction.user.id, coin_amount)
         stats = level_system.get_user_stats(interaction.guild_id, interaction.user.id)
         embed = discord.Embed(
-            title="🎁 Daily Bonus Claimed!",
-            description=f"You earned **{amount} XP** and **{coin_amount} coins**!",
+            description=(
+                f"# 🎁 Daily Bonus Claimed!\n"
+                f"### You earned `{amount} XP` + `{coin_amount}` coins\n\n"
+                f"`{stats['xp']:,}` XP · Level `{stats['level']}`\n"
+                f"`{economy_system.get_balance(interaction.guild_id, interaction.user.id):,}` coins"
+            ),
             color=EmbedFactory.SUCCESS,
         )
-        embed.add_field(name="📈 New total", value=f"`{stats['xp']:,}` XP · Level `{stats['level']}`", inline=False)
-        embed.add_field(name="💰 Balance", value=f"`{economy_system.get_balance(interaction.guild_id, interaction.user.id):,}` coins", inline=False)
+        embed.set_author(name=interaction.user.display_name, icon_url=_thumb(interaction.user))
         if stats.get("streak"):
             embed.add_field(name="🔥 Streak", value=f"`{stats['streak']} days`", inline=True)
         embed.set_footer(text=EmbedFactory.FOOTER_TEXT, icon_url=EmbedFactory.BOT_ICON)
@@ -741,10 +892,11 @@ async def balance_command(interaction: discord.Interaction, member: Optional[dis
     bal = economy_system.get_balance(interaction.guild_id, member.id)
     effects = economy_system.active_effects(interaction.guild_id, member.id)
     embed = discord.Embed(
-        title="💰 Balance",
-        description=f"**{member.display_name}** has **`{bal:,}` coins**.",
+        description=f"# 💰 Balance\n### `{bal:,}` coins",
         color=EmbedFactory.GOLD,
     )
+    embed.set_author(name=member.display_name, icon_url=_thumb(member))
+    embed.set_thumbnail(url=_thumb(member))
     if effects:
         embed.add_field(name="⚡ Active effects", value="\n".join(effects), inline=False)
     embed.set_footer(text=EmbedFactory.FOOTER_TEXT, icon_url=EmbedFactory.BOT_ICON)
@@ -782,12 +934,17 @@ async def coinflip_command(interaction: discord.Interaction, side: str, bet: int
     if not ok:
         await interaction.response.send_message(f"❌ {msg}", ephemeral=True)
         return
+    result_emoji = "🪙" if result == "heads" else "🪙"
     embed = discord.Embed(
-        title="🪙 Coin Flip",
-        description=msg,
+        description=(
+            f"# 🪙 Coin Flip\n"
+            f"### {'🎉 YOU WON!' if won else '💔 YOU LOST!'}\n\n"
+            f"Result: **{result}**\n"
+            f"`{economy_system.get_balance(interaction.guild_id, interaction.user.id):,}` coins"
+        ),
         color=EmbedFactory.SUCCESS if won else EmbedFactory.ERROR,
     )
-    embed.add_field(name="💰 Balance", value=f"`{economy_system.get_balance(interaction.guild_id, interaction.user.id):,}` coins")
+    embed.set_author(name=interaction.user.display_name, icon_url=_thumb(interaction.user))
     embed.set_footer(text=EmbedFactory.FOOTER_TEXT, icon_url=EmbedFactory.BOT_ICON)
     await interaction.response.send_message(embed=embed)
 
@@ -801,11 +958,14 @@ async def slots_command(interaction: discord.Interaction, bet: int):
         await interaction.response.send_message(f"❌ {msg}", ephemeral=True)
         return
     embed = discord.Embed(
-        title="🎰 Slot Machine",
-        description=msg,
+        description=(
+            f"# 🎰 Slot Machine\n\n"
+            f"{'🎉 JACKPOT! ' if reels[0] == reels[1] == reels[2] else ''}{msg}\n\n"
+            f"`{economy_system.get_balance(interaction.guild_id, interaction.user.id):,}` coins"
+        ),
         color=EmbedFactory.SUCCESS if payout > 0 else EmbedFactory.ERROR,
     )
-    embed.add_field(name="💰 Balance", value=f"`{economy_system.get_balance(interaction.guild_id, interaction.user.id):,}` coins")
+    embed.set_author(name=interaction.user.display_name, icon_url=_thumb(interaction.user))
     embed.set_footer(text=EmbedFactory.FOOTER_TEXT, icon_url=EmbedFactory.BOT_ICON)
     await interaction.response.send_message(embed=embed)
 
@@ -814,12 +974,12 @@ async def slots_command(interaction: discord.Interaction, bet: int):
 async def shop_command(interaction: discord.Interaction):
     lines = []
     for item_id, item in economy_system.SHOP_ITEMS.items():
-        lines.append(f"{item['emoji']} **{item['name']}** — `{item['cost']:,}` coins\n> {item['description']}")
+        lines.append(f"{item['emoji']} **{item['name']}**  ·  `{item['cost']:,}` coins\n> {item['description']}")
     embed = discord.Embed(
-        title="🛒 Coin Shop",
-        description="\n\n".join(lines),
+        description=f"# 🛒 Coin Shop\n### Spend your coins on boosts\n\n" + "\n\n".join(lines),
         color=EmbedFactory.PREMIUM,
     )
+    embed.set_author(name="Mangoli Shop", icon_url=EmbedFactory.BOT_ICON)
     embed.set_footer(
         text=f"{EmbedFactory.FOOTER_TEXT} • /buy <item> to purchase",
         icon_url=EmbedFactory.BOT_ICON,
@@ -860,9 +1020,14 @@ async def rich_command(interaction: discord.Interaction):
             name = member.display_name if member else f"User {uid}"
         except Exception:
             name = f"User {uid}"
-        medal = medals[i] if i < 3 else f"`#{i+1}`"
-        lines.append(f"{medal} **{name}** — `{bal:,}` coins")
-    embed = discord.Embed(title="💎 Richest Members", description="\n".join(lines), color=EmbedFactory.GOLD)
+        medal = medals[i] if i < 3 else f"`#{i+1:>2}`"
+        lines.append(f"{medal} **{name}**  ·  `{bal:,}` coins")
+
+    embed = discord.Embed(
+        description=f"# 💎 Richest Members\n### Coin balance rankings\n\n" + "\n".join(lines),
+        color=EmbedFactory.GOLD,
+    )
+    embed.set_thumbnail(url=interaction.guild.icon.url if interaction.guild.icon else None)
     embed.set_footer(text=EmbedFactory.FOOTER_TEXT, icon_url=EmbedFactory.BOT_ICON)
     await interaction.response.send_message(embed=embed)
 
@@ -881,16 +1046,28 @@ async def achievements_command(interaction: discord.Interaction, member: Optiona
         return
     unlocked = stats.get("achievements", [])
     all_ach = level_system.ACHIEVEMENTS
+    unlocked_names = {a["name"] for a in unlocked}
     lines = []
     for aid, ach in all_ach.items():
-        is_unlocked = any(a["name"] == ach["name"] for a in unlocked)
+        is_unlocked = ach["name"] in unlocked_names
         mark = "✅" if is_unlocked else "🔒"
         lines.append(f"{mark} {ach['emoji']} **{ach['name']}** — {ach['desc']}")
+
+    # progress bar for completion
+    pct = round(len(unlocked) / len(all_ach) * 100) if all_ach else 0
+    bar = _fancy_bar(len(unlocked), len(all_ach), width=14)
+
     embed = discord.Embed(
-        title=f"🏅 {member.display_name}'s Achievements",
-        description=f"`{len(unlocked)}/{len(all_ach)}` unlocked\n\n" + "\n".join(lines),
+        description=(
+            f"# 🏅 Achievements\n"
+            f"### `{len(unlocked)}/{len(all_ach)}` unlocked\n\n"
+            f"{bar} `{pct}%`\n\n"
+            + "\n".join(lines)
+        ),
         color=EmbedFactory.GOLD,
     )
+    embed.set_author(name=member.display_name, icon_url=_thumb(member))
+    embed.set_thumbnail(url=_thumb(member))
     embed.set_footer(text=EmbedFactory.FOOTER_TEXT, icon_url=EmbedFactory.BOT_ICON)
     await interaction.response.send_message(embed=embed)
 
@@ -909,9 +1086,14 @@ async def weekly_command(interaction: discord.Interaction):
             name = member.display_name if member else f"User {uid}"
         except Exception:
             name = f"User {uid}"
-        medal = medals[i] if i < 3 else f"`#{i+1}`"
-        lines.append(f"{medal} **{name}** — `{weekly_xp:,}` XP this week")
-    embed = discord.Embed(title="📅 Weekly Leaderboard", description="\n".join(lines), color=EmbedFactory.CHECKING)
+        medal = medals[i] if i < 3 else f"`#{i+1:>2}`"
+        lines.append(f"{medal} **{name}**  ·  `{weekly_xp:,}` XP")
+
+    embed = discord.Embed(
+        description=f"# 📅 Weekly Leaderboard\n### This week's XP race\n\n" + "\n".join(lines),
+        color=EmbedFactory.CHECKING,
+    )
+    embed.set_thumbnail(url=interaction.guild.icon.url if interaction.guild.icon else None)
     embed.set_footer(
         text=f"{EmbedFactory.FOOTER_TEXT} • Resets every week",
         icon_url=EmbedFactory.BOT_ICON,
@@ -941,10 +1123,15 @@ async def rps_command(interaction: discord.Interaction, choice: str):
     else:
         result = "I win! 😎"
     embed = discord.Embed(
-        title="✊ Rock Paper Scissors",
-        description=f"You chose {emojis[choice]} · I chose {emojis[bot_choice]}\n\n**{result}**",
+        description=(
+            f"# ✊ Rock Paper Scissors\n\n"
+            f"**You:** {emojis[choice]}\n"
+            f"**Me:** {emojis[bot_choice]}\n\n"
+            f"### {result}"
+        ),
         color=EmbedFactory.PREMIUM,
     )
+    embed.set_author(name=interaction.user.display_name, icon_url=_thumb(interaction.user))
     embed.set_footer(text=EmbedFactory.FOOTER_TEXT, icon_url=EmbedFactory.BOT_ICON)
     await interaction.response.send_message(embed=embed)
 
@@ -969,7 +1156,11 @@ async def guess_command(interaction: discord.Interaction, number: int):
     else:
         msg = f"😅 Way off! The number was **{answer}**."
         color = EmbedFactory.ERROR
-    embed = discord.Embed(title="🔢 Guess the Number", description=msg, color=color)
+    embed = discord.Embed(
+        description=f"# 🔢 Guess the Number\n\n{msg}",
+        color=color,
+    )
+    embed.set_author(name=interaction.user.display_name, icon_url=_thumb(interaction.user))
     embed.set_footer(text=EmbedFactory.FOOTER_TEXT, icon_url=EmbedFactory.BOT_ICON)
     await interaction.response.send_message(embed=embed)
 
@@ -984,10 +1175,10 @@ async def eightball_command(interaction: discord.Interaction, question: str):
         "🎱 Signs point to yes.",
     ]
     embed = discord.Embed(
-        title="🎱 Magic 8-Ball",
-        description=f"**Q:** {question}\n\n**A:** {random.choice(answers)}",
+        description=f"# 🎱 Magic 8-Ball\n\n**Q:** {question}\n\n### {random.choice(answers)}",
         color=EmbedFactory.PREMIUM,
     )
+    embed.set_author(name=interaction.user.display_name, icon_url=_thumb(interaction.user))
     embed.set_footer(text=EmbedFactory.FOOTER_TEXT, icon_url=EmbedFactory.BOT_ICON)
     await interaction.response.send_message(embed=embed)
 
@@ -1032,7 +1223,7 @@ async def send_log(title: str, message: str, log_type: str = "info", no_cooldown
             color=color,
             timestamp=datetime.now(timezone.utc)
         )
-        embed.set_footer(text="⚡ MangoliBot Logs", icon_url="https://i.imgur.com/7ZGzqjY.png")
+        embed.set_footer(text="⚡ Mangoli Logs", icon_url="https://i.imgur.com/7ZGzqjY.png")
         
         await channel.send(embed=embed)
         
@@ -1049,20 +1240,20 @@ async def stats_command(interaction: discord.Interaction):
     minutes, seconds = divmod(remainder, 60)
     
     embed = discord.Embed(
-        title=f"{Emojis.STAR} Bot Statistics",
-        description="MangoliBot Performance",
+        description=f"# 📊 Bot Statistics\n### Mangoli Performance",
         color=EmbedColors.INFO,
         timestamp=datetime.now(timezone.utc)
     )
     
-    embed.add_field(name="⏱️ Uptime", value=f"```{hours}h {minutes}m {seconds}s```", inline=True)
-    embed.add_field(name="🗄️ Servers", value=f"```{len(bot.guilds)}```", inline=True)
-    embed.add_field(name="📶 Latency", value=f"```{round(bot.latency * 1000)}ms```", inline=True)
-    embed.add_field(name="🧵 Thread Pool", value=f"```{MAX_WORKERS} workers```", inline=True)
-    embed.add_field(name="⌘ Commands", value=f"```{len(bot.tree.get_commands())}```", inline=True)
+    embed.add_field(name="⏱️ Uptime", value=f"`{hours}h {minutes}m {seconds}s`", inline=True)
+    embed.add_field(name="🗄️ Servers", value=f"`{len(bot.guilds)}`", inline=True)
+    embed.add_field(name="📶 Latency", value=f"`{round(bot.latency * 1000)}ms`", inline=True)
+    embed.add_field(name="🧵 Thread Pool", value=f"`{MAX_WORKERS} workers`", inline=True)
+    embed.add_field(name="⌘ Commands", value=f"`{len(bot.tree.get_commands())}`", inline=True)
     
-    embed.set_footer(text=EmbedFactory.FOOTER_TEXT, icon_url=EmbedFactory.BOT_ICON)
+    embed.set_author(name=bot.user.name, icon_url=bot.user.avatar.url if bot.user.avatar else EmbedFactory.BOT_ICON)
     embed.set_thumbnail(url=bot.user.avatar.url if bot.user.avatar else None)
+    embed.set_footer(text=EmbedFactory.FOOTER_TEXT, icon_url=EmbedFactory.BOT_ICON)
     
     await interaction.response.send_message(embed=embed)
 
@@ -1073,39 +1264,10 @@ async def stats_command(interaction: discord.Interaction):
 
 # Command definitions for each category
 HELP_CATEGORIES = {
-    "checkers": {
-        "emoji": "🔍",
-        "name": "Account Checkers",
-        "description": "Ultra-fast account validation with 50 parallel workers",
-        "color": 0x3498DB,
-        "icon": "⚡",
-        "commands": [
-            ("`/check <type> <file>`", "Check accounts from file (minecraft/netflix/etc)"),
-            ("`/steam <combo>`", "Check Steam account instantly"),
-            ("`/netflix <combo>`", "Verify Netflix subscription"),
-            ("`/disney <combo>`", "Check Disney+ status"),
-            ("`/crunchyroll <combo>`", "Validate Crunchyroll premium"),
-            ("`/spotify <combo>`", "Check Spotify premium"),
-        ]
-    },
-    "ai": {
-        "emoji": "🤖",
-        "name": "AI & Chat",
-        "description": "Advanced AI powered by MiMo & Groq",
-        "color": 0x9B59B6,
-        "icon": "✨",
-        "commands": [
-            ("`/ai <prompt>`", "Chat with advanced AI"),
-            ("`/personality`", "Change AI personality type"),
-            ("`/queue`", "View current AI request queue"),
-        ]
-    },
     "leveling": {
-        "emoji": "📊",
-        "name": "Level System",
-        "description": "Earn XP, climb ranks & compete",
-        "color": 0xFBBF24,
-        "icon": "🏆",
+        "emoji": "🏆",
+        "name": "Leveling & Ranks",
+        "description": "Earn XP by chatting, voice & inviting",
         "commands": [
             ("`/rank [@user]`", "Your level, XP, progress & achievements card"),
             ("`/leaderboard`", "Top 10 members by level"),
@@ -1119,8 +1281,6 @@ HELP_CATEGORIES = {
         "emoji": "💰",
         "name": "Economy & Gambling",
         "description": "Coins, betting & the shop",
-        "color": 0x57F287,
-        "icon": "💎",
         "commands": [
             ("`/balance [@user]`", "Your coin balance & active boosts"),
             ("`/give <@user> <amount>`", "Send coins to a friend"),
@@ -1134,11 +1294,9 @@ HELP_CATEGORIES = {
     "games": {
         "emoji": "🎮",
         "name": "Mini-Games",
-        "description": "Quick fun games to play",
-        "color": 0xED4245,
-        "icon": "🎲",
+        "description": "Quick fun games",
         "commands": [
-            ("`/rps <choice>`", "Rock paper scissors vs bot"),
+            ("`/rps <choice>`", "Rock paper scissors vs the bot"),
             ("`/guess <1-100>`", "Guess the secret number"),
             ("`/8ball <question>`", "Ask the magic 8-ball"),
         ]
@@ -1146,31 +1304,27 @@ HELP_CATEGORIES = {
     "voice": {
         "emoji": "🔊",
         "name": "Voice Channel",
-        "description": "Moroccan meme sounds 24/7",
-        "color": 0x5865F2,
-        "icon": "🎵",
+        "description": "Moroccan meme sounds in voice",
         "commands": [
-            ("`/voicejoin <channel>`", "Join & play random sounds"),
+            ("`/voicejoin <channel>`", "Join & play random sounds 24/7"),
             ("`/voicestop`", "Pause sound playback"),
             ("`/voiceplay`", "Resume sound playback"),
             ("`/voiceleave`", "Disconnect from voice"),
             ("`/voicestatus`", "Check voice status"),
-            ("`/playsoundlink <url>`", "Play MyInstants link"),
+            ("`/playsoundlink <url>`", "Play a MyInstants link"),
         ]
     },
     "general": {
         "emoji": "⚙️",
         "name": "General",
-        "description": "Bot info & utilities",
-        "color": 0x34495E,
-        "icon": "🔧",
+        "description": "Bot info and utilities",
         "commands": [
             ("`/help`", "This interactive help menu"),
             ("`/stats`", "Bot statistics & uptime"),
             ("`/serverstats`", "Server dashboard"),
             ("`/profile [@user]`", "User profile card"),
-            ("`/personality`", "Change AI personality"),
-            ("`/poll <question> <options>`", "Create interactive poll"),
+            ("`/personality`", "Change the AI's personality"),
+            ("`/poll <question> <options>`", "Create an interactive poll"),
         ]
     }
 }
@@ -1201,20 +1355,15 @@ class HelpCategorySelect(discord.ui.Select):
         category_key = self.values[0]
         category = HELP_CATEGORIES[category_key]
         
-        # Use category-specific color if available, otherwise default to PRIMARY
-        color = category.get('color', EmbedFactory.PRIMARY)
-        icon = category.get('icon', '')
-        
         embed = EmbedFactory.custom(
             title=f"{category['name']}",
             description=category['description'],
-            color=color,
+            color=EmbedFactory.PRIMARY,
             emoji=category['emoji']
         )
         
-        # Add commands as fields with better formatting
         for cmd, desc in category["commands"]:
-            embed.add_field(name=f"{icon} {cmd}", value=desc, inline=False)
+            embed.add_field(name=cmd, value=desc, inline=False)
         
         embed.set_footer(
             text=f"{EmbedFactory.FOOTER_TEXT} • {len(category['commands'])} commands",
@@ -1246,49 +1395,31 @@ class HelpView(discord.ui.View):
             item.disabled = True
     
     def create_home_embed(self) -> discord.Embed:
-        """Create the main help menu embed with modern design."""
+        """Create the main help menu embed."""
         total_commands = sum(len(c["commands"]) for c in HELP_CATEGORIES.values())
-        
-        # Create a beautiful gradient-style embed
         embed = discord.Embed(
-            title="✨ MANGOLIBOT HELP CENTER",
             description=(
-                "**Welcome to MangoliBot!** 🚀\n\n"
-                "Your all-in-one Discord bot for account checking, AI chat, leveling, economy, and more!\n"
-                "Select a category from the dropdown below to explore commands."
+                f"# 📚 Help Center\n"
+                f"### Welcome to **Mangoli**! 🚀\n\n"
+                f"Select a category from the dropdown below to explore all commands.\n\n"
+                f"`{total_commands}` commands · `{len(HELP_CATEGORIES)}` categories"
             ),
             color=EmbedFactory.PRIMARY,
-            timestamp=datetime.now(timezone.utc)
         )
-        embed.set_footer(text=EmbedFactory.FOOTER_TEXT, icon_url=EmbedFactory.BOT_ICON)
+        embed.set_author(name="Mangoli", icon_url=EmbedFactory.BOT_ICON)
         
-        # Build category list with emojis and formatting
-        categories_text = ""
-        for cat in HELP_CATEGORIES.values():
-            icon = cat.get('icon', '▫️')
-            categories_text += f"{cat['emoji']} **{cat['name']}**\n{icon} {cat['description']}\n\n"
+        categories_text = "\n".join([
+            f"{cat['emoji']} **{cat['name']}** — {cat['description']}"
+            for cat in HELP_CATEGORIES.values()
+        ])
+        embed.add_field(name="📂 Categories", value=categories_text, inline=False)
         
-        embed.add_field(name="📂 Available Categories", value=categories_text[:1024], inline=False)
-        
-        # Add stats with better visual appeal
-        embed.add_field(
-            name="⚡ Quick Stats",
-            value=f"> Commands: `{total_commands}`\n> Categories: `{len(HELP_CATEGORIES)}`\n> Status: `Online`",
-            inline=True,
-        )
         embed.add_field(
             name="🏆 Get Started",
-            value="> Chat & voice for XP\n> `/daily` for bonuses\n> Invite friends for rewards",
-            inline=True,
+            value="• Chat & join voice to earn XP\n• `/daily` for a daily bonus\n• Invite friends for rewards 💰",
+            inline=False,
         )
-        embed.add_field(
-            name="🔗 Useful Links",
-            value="> [Dashboard](http://localhost:5000)\n> [Support Server](https://discord.gg/nokiatis)\n> [Invite Bot](https://discord.com/oauth2/authorize)",
-            inline=True,
-        )
-        
-        # Add a nice thumbnail or image if available
-        # embed.set_thumbnail(url=EmbedFactory.BOT_ICON)
+        embed.set_footer(text=EmbedFactory.FOOTER_TEXT, icon_url=EmbedFactory.BOT_ICON)
         
         return embed
     
@@ -1576,15 +1707,16 @@ async def profile_command(interaction: discord.Interaction, user: Optional[disco
     """Display a rich user profile card."""
     target = user or interaction.user
     
-    embed = EmbedFactory.custom(
-        title=f"{target.display_name}",
+    embed = discord.Embed(
         description=f"{target.mention}",
         color=target.color if target.color != discord.Color.default() else EmbedFactory.PRIMARY,
-        emoji="👤"
     )
-    
-    if target.avatar:
-        embed.set_thumbnail(url=target.avatar.url)
+    embed.set_author(
+        name=target.display_name,
+        icon_url=_thumb(target),
+        url=f"https://discord.com/users/{target.id}",
+    )
+    embed.set_thumbnail(url=_thumb(target))
     
     # Account info
     embed.add_field(
@@ -1781,9 +1913,10 @@ async def on_app_command_error(interaction: discord.Interaction, error: app_comm
         
     else:
         logger.error(f"Command error: {error}")
-        embed = EmbedFactory.error(
-            title="Error",
-            description=f"An error occurred:\n```{str(error)[:200]}```"
+        embed = discord.Embed(
+            title=f"{Emojis.ERROR} Error",
+            description=f"An error occurred:\n```{str(error)[:200]}```",
+            color=EmbedColors.ERROR
         )
         try:
             if interaction.response.is_done():
@@ -1903,15 +2036,16 @@ async def voicejoin_command(interaction: discord.Interaction, channel: discord.V
 
     # Check voice prerequisites before attempting to connect
     if shutil.which("ffmpeg") is None:
-        embed = EmbedFactory.warning(
-            title="Voice Not Available",
+        embed = discord.Embed(
+            title="⚠️ Voice Not Available",
             description=(
                 "`ffmpeg` is not installed on this host, so the bot cannot play audio.\n\n"
                 "**How to fix:**\n"
                 "• Linux: `sudo apt install ffmpeg`\n"
                 "• Windows: download from ffmpeg.org and add it to PATH\n\n"
                 "Note: discord.py 2.7+ also requires the `davey` package for voice."
-            )
+            ),
+            color=0xE67E22
         )
         await interaction.followup.send(embed=embed, ephemeral=True)
         return
@@ -1933,9 +2067,10 @@ async def voicejoin_command(interaction: discord.Interaction, channel: discord.V
         try:
             voice_client = await asyncio.wait_for(channel.connect(), timeout=15.0)
         except asyncio.TimeoutError:
-            embed = EmbedFactory.error(
-                title="Connection Timeout",
-                description="Could not connect to voice server in time.\n\n**Possible causes:**\n• Network/DNS issues\n• Discord voice servers unavailable\n• Firewall blocking voice"
+            embed = discord.Embed(
+                title="❌ Connection Timeout",
+                description="Could not connect to voice server in time.\n\n**Possible causes:**\n• Network/DNS issues\n• Discord voice servers unavailable\n• Firewall blocking voice",
+                color=0xE74C3C
             )
             await interaction.followup.send(embed=embed, ephemeral=True)
             return
@@ -1951,11 +2086,12 @@ async def voicejoin_command(interaction: discord.Interaction, channel: discord.V
         # List available games
         games_list = ", ".join([f"🎮 {g.title()}" for g in GAME_SOUNDS.keys()])
         
-        embed = EmbedFactory.success(
-            title="Joined Voice Channel!",
+        embed = discord.Embed(
+            title="🔊 Joined Voice Channel!",
             description=f"```yaml\nChannel: {channel.name}\nMode: 24/7 Game Sounds\nStatus: Playing\n```",
+            color=0x00FF00,
+            timestamp=datetime.now(timezone.utc)
         )
-        embed.timestamp = datetime.now(timezone.utc)
         embed.add_field(
             name="🎮 Game Sounds",
             value=games_list,
@@ -1966,15 +2102,16 @@ async def voicejoin_command(interaction: discord.Interaction, channel: discord.V
             value="```\n/voicestop  - Pause sounds\n/voiceplay  - Resume sounds\n/voiceleave - Disconnect\n/voicestatus - Check status\n```",
             inline=False
         )
-        embed.set_footer(text="⚡ MangoliBot Voice • 24/7 Game Lobby")
+        embed.set_footer(text="⚡ Mangoli Voice • 24/7 Game Lobby")
         
         await interaction.followup.send(embed=embed)
         logger.info(f"Joined voice: {channel.name} in {interaction.guild.name}")
         
     except discord.errors.ClientException:
-        embed = EmbedFactory.error(
-            title="Already Connected",
-            description="Use `/voiceleave` first, then try again."
+        embed = discord.Embed(
+            title="❌ Already Connected",
+            description="Use `/voiceleave` first, then try again.",
+            color=0xE74C3C
         )
         await interaction.followup.send(embed=embed, ephemeral=True)
         
@@ -1982,14 +2119,16 @@ async def voicejoin_command(interaction: discord.Interaction, channel: discord.V
         error_msg = str(e)[:150]
         # Check for common network errors
         if "getaddrinfo failed" in str(e) or "DNS" in str(e):
-            embed = EmbedFactory.error(
-                title="DNS/Network Error",
-                description="Could not resolve Discord voice server.\n\n**Try these fixes:**\n• Check your internet connection\n• Restart your router\n• Use Google DNS (8.8.8.8)\n• Disable VPN if using one"
+            embed = discord.Embed(
+                title="❌ DNS/Network Error",
+                description="Could not resolve Discord voice server.\n\n**Try these fixes:**\n• Check your internet connection\n• Restart your router\n• Use Google DNS (8.8.8.8)\n• Disable VPN if using one",
+                color=0xE74C3C
             )
         else:
-            embed = EmbedFactory.error(
-                title="Failed to Join",
-                description=f"```{error_msg}```\n\n**Requirements:**\n• `pip install PyNaCl`\n• FFmpeg installed"
+            embed = discord.Embed(
+                title="❌ Failed to Join",
+                description=f"```{error_msg}```\n\n**Requirements:**\n• `pip install PyNaCl`\n• FFmpeg installed",
+                color=0xE74C3C
             )
         await interaction.followup.send(embed=embed, ephemeral=True)
 
@@ -2000,9 +2139,10 @@ async def voicestop_command(interaction: discord.Interaction):
     guild_id = interaction.guild_id
     
     if guild_id not in voice_clients or not voice_clients[guild_id]:
-        embed = EmbedFactory.error(
-            title="Not Connected",
-            description="Use `/voicejoin` first."
+        embed = discord.Embed(
+            title="❌ Not Connected",
+            description="Use `/voicejoin` first.",
+            color=0xE74C3C
         )
         await interaction.response.send_message(embed=embed, ephemeral=True)
         return
@@ -2019,7 +2159,7 @@ async def voicestop_command(interaction: discord.Interaction):
         color=0xFFA500,
         timestamp=datetime.now(timezone.utc)
     )
-    embed.set_footer(text="⚡ MangoliBot Voice")
+    embed.set_footer(text="⚡ Mangoli Voice")
     await interaction.response.send_message(embed=embed)
 
 
@@ -2045,7 +2185,7 @@ async def voiceplay_command(interaction: discord.Interaction):
         color=0x00FF00,
         timestamp=datetime.now(timezone.utc)
     )
-    embed.set_footer(text="⚡ MangoliBot Voice")
+    embed.set_footer(text="⚡ Mangoli Voice")
     await interaction.response.send_message(embed=embed)
 
 
@@ -2082,7 +2222,7 @@ async def voiceleave_command(interaction: discord.Interaction):
             color=0xFFA500,
             timestamp=datetime.now(timezone.utc)
         )
-        embed.set_footer(text="⚡ MangoliBot Voice")
+        embed.set_footer(text="⚡ Mangoli Voice")
         await interaction.response.send_message(embed=embed)
         
     except Exception as e:
@@ -2130,7 +2270,7 @@ async def voicestatus_command(interaction: discord.Interaction):
             timestamp=datetime.now(timezone.utc)
         )
     
-    embed.set_footer(text="⚡ MangoliBot Voice")
+    embed.set_footer(text="⚡ Mangoli Voice")
     await interaction.response.send_message(embed=embed)
 
 
@@ -2201,7 +2341,7 @@ async def playsoundlink_command(interaction: discord.Interaction, link: str):
             value=f"[MyInstants]({link})",
             inline=False
         )
-        embed.set_footer(text="⚡ MangoliBot Voice")
+        embed.set_footer(text="⚡ Mangoli Voice")
         await interaction.response.send_message(embed=embed)
         logger.info(f"Playing custom sound: {sound_name}")
         
@@ -2215,12 +2355,71 @@ async def playsoundlink_command(interaction: discord.Interaction, link: str):
         logger.error(f"Error playing custom sound: {e}")
 
 
+@bot.tree.command(name="tts", description="🗣️ Make the bot speak your text in voice")
+@app_commands.describe(
+    text="The text to speak",
+    language="Language to speak in",
+)
+@app_commands.choices(language=[
+    app_commands.Choice(name="English", value="en"),
+    app_commands.Choice(name="Arabic", value="ar"),
+    app_commands.Choice(name="French", value="fr"),
+    app_commands.Choice(name="Spanish", value="es"),
+    app_commands.Choice(name="German", value="de"),
+    app_commands.Choice(name="Italian", value="it"),
+    app_commands.Choice(name="Turkish", value="tr"),
+])
+async def tts_command(interaction: discord.Interaction, text: str, language: str = "en"):
+    """Text-to-Speech using free Google Translate TTS (no API key)."""
+    import urllib.parse
+    guild_id = interaction.guild_id
+
+    if len(text) > 190:
+        await interaction.response.send_message("❌ Text too long (max 190 characters).", ephemeral=True)
+        return
+
+    # Check the bot is in a voice channel
+    if guild_id not in voice_clients or not voice_clients[guild_id]:
+        await interaction.response.send_message("❌ Use `/voicejoin` first to join a voice channel.", ephemeral=True)
+        return
+
+    vc = voice_clients[guild_id]
+    if not vc.is_connected():
+        await interaction.response.send_message("❌ Bot is not connected to voice.", ephemeral=True)
+        return
+
+    url = (
+        "https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob"
+        f"&q={urllib.parse.quote(text)}&tl={urllib.parse.quote(language)}"
+    )
+
+    try:
+        if vc.is_playing():
+            vc.stop()
+        source = discord.FFmpegPCMAudio(
+            url,
+            before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
+        )
+        vc.play(source)
+        embed = discord.Embed(
+            title="🗣️ Speaking",
+            description=f"```{text[:200]}```",
+            color=0x8B5CF6,
+            timestamp=datetime.now(timezone.utc),
+        )
+        embed.set_footer(text="⚡ Mangoli Voice • TTS")
+        await interaction.response.send_message(embed=embed)
+    except Exception as e:
+        await interaction.response.send_message(f"❌ Error speaking: {str(e)[:150]}", ephemeral=True)
+        logger.error(f"TTS error: {e}")
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # MAIN
 # ═══════════════════════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
-    logger.info("Starting MangoliBot...")
+    logger.info("Starting Mangoli Bot...")
     logger.info("=" * 60)
 
     # ── Graceful startup checks ──────────────────────────────────────────────

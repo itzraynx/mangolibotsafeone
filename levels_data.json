@@ -1,0 +1,102 @@
+{
+  "guilds": {
+    "1440456512391614486": {
+      "users": {},
+      "invites": {},
+      "settings": {
+        "level_up_channel": 1538702988821139547,
+        "message_xp_min": 15,
+        "message_xp_max": 25,
+        "message_cooldown": 60,
+        "message_min_length": 3,
+        "voice_xp_per_minute": 5,
+        "voice_bonus_with_others": 3,
+        "invite_xp": 50,
+        "daily_xp": 100,
+        "role_rewards": {}
+      }
+    },
+    "1441823772427550864": {
+      "users": {},
+      "invites": {},
+      "settings": {
+        "level_up_channel": 1538702988821139547,
+        "message_xp_min": 15,
+        "message_xp_max": 25,
+        "message_cooldown": 60,
+        "message_min_length": 3,
+        "voice_xp_per_minute": 5,
+        "voice_bonus_with_others": 3,
+        "invite_xp": 50,
+        "daily_xp": 100,
+        "role_rewards": {}
+      }
+    },
+    "1507504457594835045": {
+      "users": {},
+      "invites": {
+        "BMGV3du7W": {
+          "uses": 2,
+          "inviter_id": "1154102914973974540"
+        },
+        "G5wzHZtqH": {
+          "uses": 1,
+          "inviter_id": "1415792806819008543"
+        },
+        "MUe3ExkccN": {
+          "uses": 2,
+          "inviter_id": "1415792806819008543"
+        },
+        "SpEEn6Awy": {
+          "uses": 1,
+          "inviter_id": "1458070137654480979"
+        },
+        "TmnjkP3Kk": {
+          "uses": 0,
+          "inviter_id": "1415792806819008543"
+        },
+        "n4u5HeyXT": {
+          "uses": 8,
+          "inviter_id": "1415792806819008543"
+        }
+      },
+      "settings": {
+        "level_up_channel": 1538702988821139547,
+        "message_xp_min": 15,
+        "message_xp_max": 25,
+        "message_cooldown": 60,
+        "message_min_length": 3,
+        "voice_xp_per_minute": 5,
+        "voice_bonus_with_others": 3,
+        "invite_xp": 50,
+        "daily_xp": 100,
+        "role_rewards": {}
+      }
+    },
+    "1535612994401214494": {
+      "users": {},
+      "invites": {
+        "KFEpxUkBEK": {
+          "uses": 4,
+          "inviter_id": "1413894353847455854"
+        },
+        "ysH9qF2yq": {
+          "uses": 1,
+          "inviter_id": "1413894353847455854"
+        }
+      },
+      "settings": {
+        "level_up_channel": 1538702988821139547,
+        "message_xp_min": 15,
+        "message_xp_max": 25,
+        "message_cooldown": 60,
+        "message_min_length": 3,
+        "voice_xp_per_minute": 5,
+        "voice_bonus_with_others": 3,
+        "invite_xp": 50,
+        "daily_xp": 100,
+        "role_rewards": {}
+      }
+    }
+  }
+}

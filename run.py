@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════════════════════════
-# NOVAGEN BOT - Main Runner
+# MANGOLI BOT - Main Runner
 # Use this file to start the bot on Python hosting
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -13,7 +13,7 @@ def start_dashboard():
     """Start the dashboard API server in a separate thread."""
     try:
         from dashboard_api import start_dashboard_server
-        start_dashboard_server(port=5000, debug=False)
+        start_dashboard_server(port=16086, debug=False)
     except Exception as e:
         print(f"[Dashboard] Failed to start: {e}")
         print("[Dashboard] The dashboard will not be available.")
@@ -21,7 +21,7 @@ def start_dashboard():
 if __name__ == "__main__":
     print("")
     print("═" * 60)
-    print("  🎮 NOVAGEN BOT")
+    print("  🎮 MANGOLI BOT")
     print("  ⚡ by Nokiatis Community")
     print("═" * 60)
     print("")

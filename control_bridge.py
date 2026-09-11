@@ -17,7 +17,7 @@ import sys
 import threading
 import time
 from collections import deque
-from datetime import datetime
+from datetime import datetime, timezone
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SETTINGS_FILE = os.path.join(BASE_DIR, 'dashboard_settings.json')
@@ -389,11 +389,11 @@ def _presence_summary():
 
 def get_status():
     if bot is None:
-        return {"connected": False, "bot_name": "MangoliBot", "reason": "Bot not started"}
+        return {"connected": False, "bot_name": "Mangoli", "reason": "Bot not started"}
 
     try:
         if not bot.is_ready():
-            return {"connected": False, "bot_name": bot.user.name if bot.user else "MangoliBot",
+            return {"connected": False, "bot_name": bot.user.name if bot.user else "Mangoli",
                     "reason": "Connecting…"}
     except Exception:
         pass
@@ -408,7 +408,7 @@ def get_status():
 
     return {
         "connected": True,
-        "bot_name": bot.user.name if bot.user else "MangoliBot",
+        "bot_name": bot.user.name if bot.user else "Mangoli",
         "bot_id": str(bot.user.id) if bot.user else None,
         "avatar_url": str(bot.user.avatar.url) if bot.user and bot.user.avatar else None,
         "latency_ms": round(bot.latency * 1000) if bot.latency else 0,
@@ -649,6 +649,482 @@ def get_commands():
         })
     result.sort(key=lambda x: (-x["enabled"], -x["uses"]))
     return result
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MUSIC CONTROL (dashboard)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _music_node():
+    try:
+        import wavelink
+    except ImportError:
+        return None
+    if not wavelink.Pool.nodes:
+        return None
+    return wavelink.Pool.get_node()
+
+
+def get_music_status():
+    """Return current music state across all guilds."""
+    node = _music_node()
+    if node is None:
+        return {"available": False, "players": []}
+
+    out = []
+    for guild_id, player in list(node.players.items()):
+        try:
+            track = player.current
+            queue = list(player.queue)
+            out.append({
+                "guild_id": str(guild_id),
+                "playing": player.playing,
+                "paused": player.paused,
+                "volume": player.volume,
+                "loop": player.queue.mode.name if hasattr(player.queue, 'mode') else 'normal',
+                "current": {
+                    "title": track.title if track else None,
+                    "author": track.author if track else None,
+                    "artwork": track.artwork if track else None,
+                    "length": track.length if track else 0,
+                    "position": player.position,
+                } if track else None,
+                "queue": [
+                    {"title": t.title, "author": t.author, "length": t.length}
+                    for t in queue[:10]
+                ],
+                "queue_count": len(queue),
+            })
+        except Exception:
+            continue
+    return {"available": True, "players": out}
+
+
+async def _music_control(guild_id, action, value=None):
+    import wavelink
+    node = _music_node()
+    if node is None:
+        return {"ok": False, "error": "Lavalink not connected"}
+    player = node.get_player(int(guild_id))
+    if not player:
+        return {"ok": False, "error": "No active player in this guild"}
+
+    if action == 'pause':
+        await player.pause(True)
+    elif action == 'resume':
+        await player.pause(False)
+    elif action == 'skip':
+        await player.skip()
+    elif action == 'stop':
+        player.queue.clear()
+        await player.stop()
+    elif action == 'shuffle':
+        player.queue.shuffle()
+    elif action == 'volume':
+        v = int(value) if value is not None else 100
+        await player.set_volume(max(0, min(200, v)))
+    elif action == 'loop':
+        modes = ['normal', 'loop', 'loop_all']
+        idx = modes.index(getattr(player.queue.mode, 'name', 'normal'))
+        nxt = modes[(idx + 1) % 3]
+        player.queue.mode = wavelink.QueueMode[nxt]
+    elif action == 'play':
+        query = value
+        if not query:
+            return {"ok": False, "error": "query required"}
+        search = await wavelink.Playable.search(query)
+        if not search:
+            return {"ok": False, "error": "No results"}
+        if isinstance(search[0], wavelink.Playlist):
+            for t in search[0].tracks:
+                player.queue.put(t)
+            if not player.playing:
+                await player.play(player.queue.get())
+        else:
+            track = search[0]
+            if player.playing:
+                player.queue.put(track)
+            else:
+                await player.play(track)
+    else:
+        return {"ok": False, "error": f"Unknown action '{action}'"}
+
+    add_log("INFO", f"Music control from dashboard: {action} in guild {guild_id}")
+    return {"ok": True}
+
+
+def music_control(guild_id, action, value=None):
+    return run_on_loop(_music_control(guild_id, action, value))
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MODERATION (dashboard)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+_warnings = {}  # guild_id -> {user_id: [warnings]}
+
+
+def get_members(guild_id):
+    """Return all members with basic info for the moderation panel."""
+    if bot is None:
+        return []
+    guild = bot.get_guild(int(guild_id))
+    if not guild:
+        return []
+    out = []
+    for m in guild.members:
+        out.append({
+            "user_id": str(m.id),
+            "name": m.display_name,
+            "username": str(m),
+            "avatar_url": str(m.display_avatar.url) if m.display_avatar else None,
+            "is_bot": m.bot,
+            "joined_at": m.joined_at.isoformat() if m.joined_at else None,
+            "top_role": m.top_role.name if m.top_role else "",
+            "warnings": len(_warnings.get(str(guild.id), {}).get(str(m.id), [])),
+        })
+    out.sort(key=lambda x: (x["is_bot"], x["name"].lower()))
+    return out
+
+
+async def _mod_action(guild_id, action, user_id, reason=None):
+    guild = bot.get_guild(int(guild_id))
+    if not guild:
+        return {"ok": False, "error": "Guild not found"}
+    member = guild.get_member(int(user_id))
+    if not member:
+        return {"ok": False, "error": "Member not found"}
+
+    gid = str(guild_id)
+    uid = str(user_id)
+
+    try:
+        if action == 'kick':
+            await member.kick(reason=reason or "Kicked from dashboard")
+            msg = f"Kicked {member.display_name}"
+        elif action == 'ban':
+            await member.ban(reason=reason or "Banned from dashboard", delete_message_days=1)
+            msg = f"Banned {member.display_name}"
+        elif action == 'warn':
+            _warnings.setdefault(gid, {}).setdefault(uid, []).append({
+                "reason": reason or "No reason", "time": datetime.now().isoformat(),
+            })
+            msg = f"Warned {member.display_name}"
+        elif action == 'clear_warns':
+            _warnings.setdefault(gid, {}).pop(uid, None)
+            msg = f"Cleared warnings for {member.display_name}"
+        else:
+            return {"ok": False, "error": f"Unknown action '{action}'"}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+    add_log("WARNING", f"Moderation from dashboard: {action} {member.display_name}")
+    return {"ok": True, "message": msg}
+
+
+def mod_action(guild_id, action, user_id, reason=None):
+    return run_on_loop(_mod_action(guild_id, action, user_id, reason))
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# GIVEAWAYS (dashboard)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+import time as _time
+
+_giveaways = {}  # giveaway_id -> dict
+_giveaway_seq = 0
+
+
+def get_giveaways():
+    """List active giveaways (not ended)."""
+    out = []
+    for gid, g in _giveaways.items():
+        out.append({
+            "giveaway_id": gid,
+            "guild_id": g["guild_id"],
+            "prize": g["prize"],
+            "winners": g["winners"],
+            "ends_at": g["ends_at"],
+            "entries": list(g["entries"]),
+            "entry_count": len(g["entries"]),
+            "channel_id": g["channel_id"],
+            "ended": _time.time() >= g["ends_at"],
+        })
+    out.sort(key=lambda x: x["ends_at"])
+    return out
+
+
+def create_giveaway(guild_id, prize, winners, duration_minutes, channel_id=None):
+    global _giveaway_seq
+    _giveaway_seq += 1
+    gid = f"gw_{_giveaway_seq}"
+    _giveaways[gid] = {
+        "guild_id": str(guild_id),
+        "prize": prize,
+        "winners": int(winners),
+        "ends_at": _time.time() + (int(duration_minutes) * 60),
+        "entries": [],
+        "channel_id": str(channel_id) if channel_id else None,
+    }
+    add_log("INFO", f"Giveaway created: {prize} ({winners} winner(s))")
+    return gid
+
+
+def end_giveaway(giveaway_id):
+    gw = _giveaways.get(giveaway_id)
+    if not gw:
+        return {"ok": False, "error": "Giveaway not found"}
+    entries = gw["entries"]
+    import random
+    if not entries:
+        return {"ok": False, "error": "No entries"}
+    n = min(int(gw["winners"]), len(entries))
+    winners = random.sample(entries, n)
+    return {"ok": True, "winners": winners, "prize": gw["prize"]}
+
+
+def delete_giveaway(giveaway_id):
+    if giveaway_id in _giveaways:
+        del _giveaways[giveaway_id]
+        return {"ok": True}
+    return {"ok": False, "error": "Giveaway not found"}
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SCHEDULED ANNOUNCEMENTS (dashboard)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+_announcements = {}  # ann_id -> dict
+_announce_seq = 0
+
+
+def get_announcements():
+    out = []
+    for aid, a in _announcements.items():
+        out.append({
+            "announcement_id": aid,
+            "guild_id": a["guild_id"],
+            "channel_id": a["channel_id"],
+            "channel_name": a.get("channel_name", ""),
+            "message": a["message"],
+            "send_at": a["send_at"],
+            "sent": a["sent"],
+        })
+    out.sort(key=lambda x: x["send_at"])
+    return out
+
+
+def create_announcement(guild_id, channel_id, channel_name, message, send_at):
+    """send_at: unix timestamp (seconds)."""
+    global _announce_seq
+    _announce_seq += 1
+    aid = f"ann_{_announce_seq}"
+    _announcements[aid] = {
+        "guild_id": str(guild_id),
+        "channel_id": str(channel_id),
+        "channel_name": channel_name,
+        "message": message,
+        "send_at": float(send_at),
+        "sent": False,
+    }
+    add_log("INFO", f"Announcement scheduled for {channel_name}")
+    return aid
+
+
+def delete_announcement(aid):
+    if aid in _announcements:
+        del _announcements[aid]
+        return {"ok": True}
+    return {"ok": False, "error": "Announcement not found"}
+
+
+async def _check_announcements():
+    """Background: send due announcements. Called periodically."""
+    import discord as _discord
+    now = _time.time()
+    due = [(aid, a) for aid, a in _announcements.items() if not a["sent"] and a["send_at"] <= now]
+    for aid, a in due:
+        if bot is None:
+            continue
+        guild = bot.get_guild(int(a["guild_id"]))
+        if not guild:
+            continue
+        channel = guild.get_channel(int(a["channel_id"]))
+        if channel:
+            try:
+                embed = _discord.Embed(
+                    title="📢 Announcement",
+                    description=a["message"],
+                    color=0x5865F2,
+                    timestamp=datetime.now(timezone.utc),
+                )
+                embed.set_footer(text="Mangoli Bot • Scheduled Announcement")
+                await channel.send(embed=embed)
+            except Exception as e:
+                add_log("ERROR", f"Announcement send failed: {e}")
+        a["sent"] = True
+    # cleanup old sent announcements (keep last 100)
+    sent = [aid for aid, a in _announcements.items() if a["sent"]]
+    for aid in sent[:-100]:
+        _announcements.pop(aid, None)
+
+
+def get_due_announcements_now():
+    """Non-async helper: returns due announcements for the loop."""
+    now = _time.time()
+    return [(aid, a) for aid, a in _announcements.items() if not a["sent"] and a["send_at"] <= now]
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MEMBER MANAGEMENT (dashboard)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def get_roles(guild_id):
+    if bot is None:
+        return []
+    guild = bot.get_guild(int(guild_id))
+    if not guild:
+        return []
+    out = []
+    for r in guild.roles:
+        if r.name == "@everyone":
+            continue
+        out.append({"id": str(r.id), "name": r.name, "color": str(r.color), "position": r.position})
+    out.sort(key=lambda x: -x["position"])
+    return out
+
+
+async def _role_action(guild_id, user_id, role_id, action):
+    guild = bot.get_guild(int(guild_id))
+    if not guild:
+        return {"ok": False, "error": "Guild not found"}
+    member = guild.get_member(int(user_id))
+    if not member:
+        return {"ok": False, "error": "Member not found"}
+    role = guild.get_role(int(role_id))
+    if not role:
+        return {"ok": False, "error": "Role not found"}
+
+    try:
+        if action == 'add':
+            await member.add_roles(role, reason="Added from dashboard")
+            msg = f"Added role {role.name}"
+        elif action == 'remove':
+            await member.remove_roles(role, reason="Removed from dashboard")
+            msg = f"Removed role {role.name}"
+        else:
+            return {"ok": False, "error": f"Unknown action '{action}'"}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+    add_log("INFO", f"Role {action}: {role.name} for {member.display_name}")
+    return {"ok": True, "message": msg}
+
+
+def role_action(guild_id, user_id, role_id, action):
+    return run_on_loop(_role_action(guild_id, user_id, role_id, action))
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# AUTO-RESPONDER (dashboard)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+_autoresponders = {}  # guild_id -> {trigger: response}
+_ar_seq = 0
+
+
+def get_autoresponders(guild_id=None):
+    if guild_id:
+        return dict(_autoresponders.get(str(guild_id), {}))
+    return dict(_autoresponders)
+
+
+def add_autoresponder(guild_id, trigger, response):
+    gid = str(guild_id)
+    _autoresponders.setdefault(gid, {})[trigger.lower().strip()] = response.strip()
+    add_log("INFO", f"Auto-responder added: '{trigger}'")
+    return {"ok": True}
+
+
+def remove_autoresponder(guild_id, trigger):
+    gid = str(guild_id)
+    if gid in _autoresponders and trigger in _autoresponders[gid]:
+        del _autoresponders[gid][trigger]
+        return {"ok": True}
+    return {"ok": False, "error": "Trigger not found"}
+
+
+def check_autoresponders(guild_id, message):
+    """Return the matching response (or None) for a message."""
+    gid = str(guild_id)
+    text = message.lower()
+    for trigger, response in _autoresponders.get(gid, {}).items():
+        if trigger in text:
+            return response
+    return None
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# WEBHOOK MANAGEMENT (dashboard)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+async def _get_webhooks(guild_id):
+    guild = bot.get_guild(int(guild_id))
+    if not guild:
+        return []
+    out = []
+    try:
+        for wh in await guild.webhooks():
+            out.append({
+                "id": str(wh.id),
+                "name": wh.name,
+                "channel_id": str(wh.channel_id),
+                "channel_name": wh.channel.name if wh.channel else "",
+            })
+    except Exception as e:
+        return [{"error": str(e)}]
+    return out
+
+
+def get_webhooks(guild_id):
+    return run_on_loop(_get_webhooks(guild_id), timeout=15)
+
+
+async def _create_webhook(guild_id, channel_id, name):
+    guild = bot.get_guild(int(guild_id))
+    if not guild:
+        return {"ok": False, "error": "Guild not found"}
+    channel = guild.get_channel(int(channel_id))
+    if not channel:
+        return {"ok": False, "error": "Channel not found"}
+    try:
+        wh = await channel.create_webhook(name=name or "Mangoli Webhook")
+        return {"ok": True, "id": str(wh.id), "url": wh.url}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+def create_webhook(guild_id, channel_id, name):
+    return run_on_loop(_create_webhook(guild_id, channel_id, name), timeout=15)
+
+
+async def _delete_webhook(guild_id, webhook_id):
+    guild = bot.get_guild(int(guild_id))
+    if not guild:
+        return {"ok": False, "error": "Guild not found"}
+    try:
+        for wh in await guild.webhooks():
+            if str(wh.id) == str(webhook_id):
+                await wh.delete()
+                return {"ok": True}
+        return {"ok": False, "error": "Webhook not found"}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+def delete_webhook(guild_id, webhook_id):
+    return run_on_loop(_delete_webhook(guild_id, webhook_id), timeout=15)
 
 
 print("[ControlBridge] Control bridge loaded")

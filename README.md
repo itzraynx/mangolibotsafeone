@@ -1,28 +1,15 @@
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=13,2,4&height=200&section=header&text=MANGOLI%20BOT&fontSize=48&fontColor=fff&animation=twinkling&fontAlignY=35&desc=Premium%20Multi-Service%20Checker%20Bot&descSize=20&descAlignY=55" width="100%" />
+# 🎮 Mangoli Bot
 
-<br />
+**The Ultimate All-In-One Discord Bot**
 
-<img src="https://img.shields.io/badge/Version-2.0.0-e74c3c?style=for-the-badge&logo=appveyor&logoColor=white" />
-<img src="https://img.shields.io/badge/Status-Active-brightgreen?style=for-the-badge&logo=power-off" />
 <img src="https://img.shields.io/badge/Language-Python-3776AB?style=for-the-badge&logo=python&logoColor=white" />
 <img src="https://img.shields.io/badge/Framework-discord.py-5865F2?style=for-the-badge&logo=discord&logoColor=white" />
-<img src="https://img.shields.io/badge/AI-Groq%20%2B%20MiMo-FF6F00?style=for-the-badge&logo=openai&logoColor=white" />
+<img src="https://img.shields.io/badge/Music-Lavalink-FF6F00?style=for-the-badge" />
+<img src="https://img.shields.io/badge/Dashboard-Flask-000000?style=for-the-badge&logo=flask&logoColor=white" />
 
-<br /><br />
-
-<img src="https://komarev.com/ghpvc/?username=itzraynx&repo=mangoli-bot&style=for-the-badge&color=e74c3c" />
-<a href="https://github.com/itzraynx/mangoli-bot"><img src="https://img.shields.io/github/last-commit/itzraynx/mangoli-bot?style=for-the-badge&color=2ecc71" /></a>
-<a href="https://github.com/itzraynx/mangoli-bot"><img src="https://img.shields.io/github/repo-size/itzraynx/mangoli-bot?style=for-the-badge&color=9b59b6" /></a>
-
-<br /><br />
-
-### ⚡ The Ultimate All-In-One Premium Checker Bot
-
-<div align="center">
-  <img src="https://skillicons.dev/icons?i=python,discord,flask,githubactions&theme=dark" alt="Tech Stack" />
-</div>
+> ⚡ Built by **NOKIATIS COMMUNITY**
 
 </div>
 
@@ -30,188 +17,91 @@
 
 ## 🎯 Overview
 
-**Mangoli Bot** is a production-grade Discord bot built for high-performance account checking across multiple platforms. Featuring async processing, beautiful embeds, AI-powered responses, a real-time web dashboard, and robust queue management.
-
-> ⚡ Built by **NOKIATIS COMMUNITY** — NOVAGEN CLOUD SERVICES
+**Mangoli Bot** is a feature-rich Discord bot with a live web control panel. It combines leveling, a full coin economy, support tickets, moderation, music playback, and mini-games — all in one bot.
 
 ---
 
 ## ✨ Features
 
-<details>
-<summary><h3>🔍 Account Checkers</h3></summary>
-
-| Service | Status | Speed | Features |
-|:-------:|:------:|:-----:|:--------:|
-| 🎮 **Minecraft** | ✅ | Fast | Full Access / Semi / Migration |
-| 🎮 **Steam** | ✅ | Fast | RSA Encrypted Login |
-| 🎬 **Netflix** | ✅ | Fast | Plan Detection |
-| 🏰 **Disney+** | ✅ | Fast | Subscription Info |
-| 🍜 **Crunchyroll** | ✅ | Fast | Premium Detection |
-| 🎵 **Spotify** | ✅ | Fast | Plan & Country |
-| 🎮 **Mojang** | ✅ | Fast | Account Migration |
-
-</details>
-
-<details>
-<summary><h3>🤖 AI Integration</h3></summary>
-
-- **MiMo AI** — Smart conversational responses
-- **Groq AI** — Lightning-fast AI completions
-- Context-aware replies & natural conversations
-
-</details>
-
-<details>
-<summary><h3>📊 Live Dashboard</h3></summary>
-
-- Real-time statistics tracking
-- Web-based control panel
-- Live check results & history
-- REST API for integrations
-
-</details>
-
-<details>
-<summary><h3>🛡️ Bot Features</h3></summary>
-
-- 🚀 **Async Processing** — ThreadPoolExecutor for parallel checks
-- 📋 **Queue System** — Batch processing with progress tracking
-- 🎨 **Beautiful Embeds** — Color-coded status with rich formatting
-- ⚡ **Slash Commands** — Modern Discord app commands
-- 🔒 **Rate Limiting** — Smart request throttling
-- 🌐 **Proxy Support** — Configurable proxy rotation
-- 📢 **Announcements** — Built-in announcement system
-
-</details>
+| System | Highlights |
+|--------|-----------|
+| 🏆 **Leveling** | XP for chat/voice/invites, ranks, leaderboards, weekly seasons, daily streaks, 12 achievements |
+| 💰 **Economy** | Coins, `/give`, coinflip, slots, shop with XP boosters & lucky charms, rich leaderboard |
+| 🎫 **Tickets** | Panel (dropdown/buttons), claim/close/reopen, transcripts, star ratings, blacklist, auto-close |
+| 🎵 **Music** | Lavalink — YouTube, YouTube Music, SoundCloud, Spotify, playlists, queue, filters, lyrics |
+| 🛡️ **Moderation** | `/purgeuser` (server-wide or last N hours), `/purge` |
+| 🎮 **Mini-Games** | Rock-paper-scissors, guess the number, 8-ball |
+| 🔊 **Voice** | Join voice, Moroccan meme sounds, custom MyInstants links |
+| 📊 **Dashboard** | Live web control panel — status, voice, logs, servers, commands, levels, settings |
 
 ---
 
-## 🛠️ Tech Stack
-
-| Technology | Purpose |
-|:----------|:--------|
-| `Python 3.10+` | Core Language |
-| `discord.py 2.0+` | Discord Bot Framework |
-| `aiohttp` | Async HTTP Requests |
-| `Flask` | Dashboard API Server |
-| `PyCryptodome` | RSA Encryption (Steam) |
-| `Groq SDK` | AI Integration |
-| `PyNaCl` | Voice Channel Support |
-
----
-
-## 📁 Project Structure
-
-```
-mangoli-bot/
-├── 🤖 bot.py                    # Main bot entry point
-├── 🚀 app.py                    # Flask dashboard server
-├── 🎮 checker_module.py          # Minecraft checker engine
-├── 🎮 steam_checker_enhanced.py  # Steam account checker
-├── 🎬 netflix_checker.py         # Netflix checker
-├── 🏰 disney_checker.py          # Disney+ checker
-├── 🍜 crunchyroll_checker.py     # Crunchyroll checker
-├── 🎵 spotify_checker.py         # Spotify checker
-├── 🤖 mimo_ai.py                 # MiMo AI integration
-├── 🧠 groq_ai.py                 # Groq AI integration
-├── 📊 dashboard_api.py           # Dashboard REST API
-├── 📈 dashboard_stats_tracker.py # Real-time stats engine
-├── 📁 dashboard/                 # Web dashboard frontend
-│   ├── index.html
-│   ├── script.js
-│   └── style.css
-├── 📋 extra_checkers_commands.py # Additional commands
-├── 🔧 fuzz_power.py             # Fuzzing utilities
-├── 🔗 find_button.py            # Button interaction handler
-├── 📄 requirements.txt           # Dependencies
-└── 🚀 run.py                     # Launcher script
-```
-
----
-
-## ⚡ Quick Start
-
-### Prerequisites
-
-- Python 3.10+
-- Discord Bot Token
-- Groq API Key (for AI features)
-
-### Installation
+## 📥 Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/itzraynx/mangoli-bot.git
-
-# Navigate to project
-cd mangoli-bot
-
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-venv\Scripts\activate     # Windows
-
-# Install dependencies
+git clone <your-repo-url>
+cd mangoli-bot-main
 pip install -r requirements.txt
+```
 
-# Configure your tokens in .env
-cp .env.example .env
+### Configuration
 
-# Run the bot
+Edit `bot.py`:
+- `TOKEN` — your Discord bot token
+- `MIMO_API_KEY` — your MiMo AI key (for the AI chat)
+
+Edit `music.py`:
+- `LAVALINK_URI` + `LAVALINK_PASSWORD` — your Lavalink server (or use a free public node)
+
+### Run
+
+```bash
 python run.py
 ```
 
+This starts **both** the Discord bot and the web dashboard (default `http://localhost:5000`).
+
 ---
 
-## 🎮 Commands
+## 📋 Commands
 
-| Command | Description |
-|:--------|:-----------|
-| `/check` | Check Minecraft accounts |
-| `/steam` | Check Steam accounts |
-| `/netflix` | Check Netflix accounts |
-| `/disney` | Check Disney+ accounts |
-| `/crunchyroll` | Check Crunchyroll accounts |
-| `/spotify` | Check Spotify accounts |
-| `/ai` | Chat with AI assistant |
-| `/queue` | View current queue status |
-| `/stats` | View bot statistics |
-| `/announce` | Send announcements |
+| Category | Commands |
+|----------|----------|
+| Leveling | `/rank` `/leaderboard` `/weekly` `/achievements` `/invites` `/daily` |
+| Economy | `/balance` `/give` `/coinflip` `/slots` `/shop` `/buy` `/rich` |
+| Tickets | `/panel` `/settings` `/blacklist` `/claim` `/unclaim` `/close` `/reopen` `/ticketdelete` `/ticketadd` `/ticketremove` `/transcript` |
+| Music | `/join` `/play` `/pause` `/resume` `/skip` `/stop` `/nowplaying` `/queue` `/volume` `/loop` `/shuffle` `/seek` `/autoplay` `/lyrics` `/leave` |
+| Moderation | `/purgeuser` `/purge` |
+| Games | `/rps` `/guess` `/8ball` |
+| Voice | `/voicejoin` `/voicestop` `/voiceplay` `/voiceleave` `/voicestatus` `/playsoundlink` |
+| General | `/help` `/stats` `/serverstats` `/profile` `/personality` `/poll` |
 
 ---
 
 ## 📊 Dashboard
 
-Access the live web dashboard at `http://localhost:5000` when the bot is running.
-
-- 📈 Real-time check statistics
-- 🎨 Beautiful responsive UI
-- 📋 Live queue monitoring
-- 🕐 Historical data tracking
-
----
-
-## 📜 License
-
-This project is proprietary software by **NOKIATIS COMMUNITY**.
+The web dashboard lets you control the bot from a browser:
+- **Overview** — bot status, latency, uptime, servers
+- **Voice** — join/pause/resume/leave voice channels
+- **Logs** — live log feed with export
+- **Servers / Commands** — guild list + command usage
+- **Levels** — full XP/coins leaderboard
+- **Presence** — change status & activity
+- **AI Brain** — personality, channel, custom persona
+- **Broadcast** — send messages as the bot
+- **System** — info + restart/shutdown
 
 ---
 
-<div align="center">
+## ⚙️ Requirements
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=13,2,4&height=120&section=footer" width="100%" />
+- Python 3.10+
+- A running **Lavalink** server (for music) — or use a free public node
+- `ffmpeg` installed on the host (for voice audio)
 
-<br />
-<b>Made with 💜 by</b> <a href="https://github.com/itzraynx"><b>itzraynx</b></a>
+---
 
-<br /><br />
+## 🤝 Credits
 
-<a href="https://github.com/itzraynx">
-  <img src="https://img.shields.io/badge/GitHub-itzraynx-181717?style=for-the-badge&logo=github" />
-</a>
-<a href="https://discord.gg/">
-  <img src="https://img.shields.io/badge/Discord-Join-5865F2?style=for-the-badge&logo=discord" />
-</a>
+> ⚡ Built by **NOKIATIS COMMUNITY**
 
-</div>

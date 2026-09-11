@@ -1,7 +1,7 @@
 """
 ═══════════════════════════════════════════════════════════════════════════════
 LEVEL SYSTEM
-XP, levels, ranks, invite tracking & leaderboards for the MangoliBot bot.
+XP, levels, ranks, invite tracking & leaderboards for the Mangoli bot.
 by Nokiatis Community
 ═══════════════════════════════════════════════════════════════════════════════
 
@@ -196,12 +196,16 @@ def level_progress(xp):
 
 def level_emoji(level):
     """A rank emoji that scales with level, for nicer cards."""
+    try:
+        from emojis import em
+    except ImportError:
+        em = lambda n: ""
     if level >= 50:
-        return "👑"
+        return em("crown") or "👑"
     if level >= 25:
-        return "💎"
+        return em("gem") or "💎"
     if level >= 15:
-        return "🏅"
+        return em("medal") or "🏅"
     if level >= 10:
         return "🥇"
     if level >= 5:
@@ -209,7 +213,7 @@ def level_emoji(level):
     if level >= 3:
         return "🥉"
     if level >= 1:
-        return "⭐"
+        return em("star") or "⭐"
     return "🌱"
 
 
@@ -351,6 +355,15 @@ def find_used_invite(guild_id, fresh_invites):
             save(data)
             return inv
     return None
+
+
+def get_inviter_count(guild_id, inviter_id):
+    """Return how many people this inviter has invited (from their user record)."""
+    data = load()
+    u = get_user(data, guild_id, inviter_id, create=False)
+    if u is None:
+        return 0
+    return u.get("invites", 0)
 
 
 # ── Leaderboard / profile ─────────────────────────────────────────────────────
